@@ -81,3 +81,17 @@ for i in track_iter_progress(l):
     t2 = get_framenum(str(v + f'/{i}'))
     if t1 / t2 > 1.02 or t1 / t2 < 0.98:
         print('\n', i, t1, t2)
+
+#%% combine activitynet videos v1-3 and v1-2
+import mmcv
+from pathlib import Path
+s = "/home/louis/Downloads/train_val"
+ann_ori = '/home/louis/PycharmProjects/FCOS-TAL/data/ActivityNet/activity_net.v1-3.min.json'
+anno_database = mmcv.load(ann_ori)['database']
+
+for v in mmcv.track_iter_progress(list(Path(s).iterdir())):
+    video_name = '_'.join(v.stem.split("_", 1)[1:])
+    if anno_database[video_name]['subset'] == 'training':
+        v.rename(v.parent.parent.joinpath("train1-2").joinpath(v.name))
+    else:
+        v.rename(v.parent.parent.joinpath("val1-2").joinpath(v.name))
