@@ -1,0 +1,5 @@
+alias mmlab="conda activate open-mmlab"
+alias apn="cd /home/louis/PycharmProjects/APN"
+alias gpurun="watch nvidia-smi"
+alias data="cd /mnt/louis-consistent/Datasets"
+alias server="ssh luchongkai@158.132.21.81"
