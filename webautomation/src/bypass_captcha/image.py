@@ -106,11 +106,11 @@ class ImageCaptcha(_Captcha):
     :param fonts: Fonts to be used to generate CAPTCHA images.
     :param font_sizes: Random choose a font size from this parameters.
     """
-    def __init__(self, width=160, height=60, fonts=None, font_sizes=None):
+    def __init__(self, width=95, height=25, fonts=None, font_sizes=None):
         self._width = width
         self._height = height
         self._fonts = fonts or DEFAULT_FONTS
-        self._font_sizes = font_sizes or (42, 50, 56)
+        self._font_sizes = font_sizes or (21,)
         self._truefonts = []
 
     @property
@@ -164,32 +164,12 @@ class ImageCaptcha(_Captcha):
             font = random.choice(self.truefonts)
             w, h = draw.textsize(c, font=font)
 
-            dx = random.randint(0, 4)
-            dy = random.randint(0, 6)
+            # dx = random.randint(0, 4)
+            dx = 0
+            # dy = random.randint(0, 6)
+            dy = 0
             im = Image.new('RGBA', (w + dx, h + dy))
             Draw(im).text((dx, dy), c, font=font, fill=color)
-
-            # rotate
-            im = im.crop(im.getbbox())
-            im = im.rotate(random.uniform(-30, 30), Image.BILINEAR, expand=1)
-
-            # warp
-            dx = w * random.uniform(0.1, 0.3)
-            dy = h * random.uniform(0.2, 0.3)
-            x1 = int(random.uniform(-dx, dx))
-            y1 = int(random.uniform(-dy, dy))
-            x2 = int(random.uniform(-dx, dx))
-            y2 = int(random.uniform(-dy, dy))
-            w2 = w + abs(x1) + abs(x2)
-            h2 = h + abs(y1) + abs(y2)
-            data = (
-                x1, y1,
-                -x1, h2 - y2,
-                w2 + x2, h2 + y2,
-                w2 - x2, -y1,
-            )
-            im = im.resize((w2, h2))
-            im = im.transform((w, h), Image.QUAD, data)
             return im
 
         images = []
@@ -226,7 +206,7 @@ class ImageCaptcha(_Captcha):
         background = random_color(238, 255)
         color = random_color(10, 200, random.randint(220, 255))
         im = self.create_captcha_image(chars, color, background)
-        self.create_noise_dots(im, color)
+        # self.create_noise_dots(im, color)
         self.create_noise_curve(im, color)
         im = im.filter(ImageFilter.SMOOTH)
         return im
