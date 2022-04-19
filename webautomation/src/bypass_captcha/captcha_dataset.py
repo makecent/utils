@@ -7,7 +7,7 @@ import torch
 
 
 class CaptchaDataset(Dataset):
-    def __init__(self, img_dir, annotations_file=None,  transform=None, **kwargs):
+    def __init__(self, img_dir, annotations_file=None,  transform=None, num=10000, **kwargs):
         super(CaptchaDataset, self).__init__(**kwargs)
         if annotations_file is not None:
             self.annotations = pd.read_csv(annotations_file, names=['file_name', 'label'])
@@ -15,9 +15,10 @@ class CaptchaDataset(Dataset):
             self.annotations = None
         self.img_dir = img_dir
         self.transform = transform
+        self.num = num
 
     def __len__(self):
-        return 20000
+        return self.num
 
     def __getitem__(self, idx):
         if self.annotations is not None:

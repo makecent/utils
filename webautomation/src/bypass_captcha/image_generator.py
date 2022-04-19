@@ -1,9 +1,12 @@
+from pathlib import Path
 import time
 import requests
 from image import ImageCaptcha
 import numpy as np
 from os import path as osp
 import timeout_decorator
+from PIL import Image, UnidentifiedImageError
+import io
 
 generator = ImageCaptcha()
 
@@ -38,18 +41,25 @@ def demo():
 def r():
     return requests.get("https://hk.sz.gov.cn:8118/user/getVerify?0.6619971119181707").content
 
+dir = 'images'
 
 def get():
-    for i in range(9596, 10000):
-        while True:
+    latest = int(sorted(list(Path(dir).iterdir()))[-1].stem)
+    while True:
+        try:
+            img_data = r()
             try:
-                img_data = r()
-                break
-            except timeout_decorator.timeout_decorator.TimeoutError:
-                time.sleep(5)
-        time.sleep(np.random.rand(1)[0])
-        with open(f'images/{i:05d}.jpg', 'wb') as handler:
-            handler.write(img_data)
+                Image.open(io.BytesIO(img_data))
+                with open(f'{dir}/{latest + 1:05d}.jpg', 'wb') as handler:
+                    handler.write(img_data)
+                latest += 1
+            except:
+                time.sleep(np.random.rand(50)[0])
+                continue
+        except timeout_decorator.timeout_decorator.TimeoutError:
+            time.sleep(np.random.rand(50)[0])
+        time.sleep(np.random.rand(2)[0])
+
 
 
 get()
