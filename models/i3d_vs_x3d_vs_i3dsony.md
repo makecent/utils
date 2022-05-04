@@ -57,3 +57,8 @@ Flops: 27.86 GFLOPs
 Params: 12.7 M
 ==============================
 
+Interesting, it seems that the x3d is the smallest model, at least smaller than i3d_sony.
+But when I use x3d backbone in APN, the batch size have to be reduced to **8** to avoid OOM error, 
+which can be up to **20** when using i3d_sony backbone in the same setting. 
+
+
