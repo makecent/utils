@@ -1,3 +1,5 @@
+custom_imports = dict(imports=['custom_modules'], allow_failed_imports=False)
+
 checkpoint_config = dict(interval=5)
 log_config = dict(
     interval=20,
