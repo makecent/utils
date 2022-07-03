@@ -33,6 +33,7 @@ Command used:
 PYTHONPATH=$PWD:$PYTHONPATH python mmaction2/tools/analysis/get_flops.py x3d.py --shape 1 3 16 224 224
 PYTHONPATH=$PWD:$PYTHONPATH python mmaction2/tools/analysis/get_flops.py i3d.py --shape 1 3 16 224 224
 PYTHONPATH=$PWD:$PYTHONPATH python mmaction2/tools/analysis/get_flops.py i3d_sony.py --shape 1 3 16 224 224
+#PYTHONPATH=$PWD:$PYTHONPATH python /home/louis/PycharmProjects/mmaction2/tools/analysis/get_flops.py configs/timesformer/timesformer_divST_8x32x1_15e_kinetics400_rgb.py --shape 1 3 8 224 224
 ```
 
 

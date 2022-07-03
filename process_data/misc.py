@@ -1,4 +1,4 @@
-# %%  check if generated raw frames correct aligned
+# %%  check if the number of generated RGB and optical flow frames correctly aligned
 from pathlib import Path
 from mmcv import imread
 import numpy as np
