@@ -117,7 +117,7 @@ class APN(nn.Module):
     #
     #     return outputs
 
-    def feature_extract(self, imgs):
+    def feature_extract(self, imgs, img_metas=None):
         batch_size, num_segs = imgs.shape[:2]
         imgs = imgs.reshape((-1,) + imgs.shape[2:])
         feat = self.backbone(imgs)
@@ -125,4 +125,4 @@ class APN(nn.Module):
         if num_segs > 1:
             feat = feat.reshape((batch_size, num_segs, -1))
             feat = feat.mean(axis=1)
-        return feat
+        return feat.detach().cpu().numpy()

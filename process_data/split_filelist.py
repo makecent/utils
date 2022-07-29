@@ -3,20 +3,27 @@
 # and these text files can be input as an argument of the relevant function so the function only process a subset.
 
 from pathlib import Path
+import numpy as np
 
-# Init target folder
-t = Path("/home/louis/PycharmProjects/APN/my_data/thumos14/rawframes/train")
+# Init target folder by directly giving the folder
+t = Path("/home/louis/PycharmProjects/APN/my_data/kinetics400/videos_val")
 
-# Keep the sub-folder names only. (Optional)
-l = [i.name for i in t.iterdir()]
+# # Only access the sub-folders
+# l = [i for i in t.glob("**/*")]
 
-# Split into 100-length chunks
-k = [l[i:i + 100] for i in range(0, len(l), 100)]
+# Recursively glob the file in the folder
+l = sorted(['/'.join(i.parts[-2:]) for i in t.glob("**/*") if not i.is_dir()])
+
+# # Split into fixed-length chunks
+# k = [l[i:i + 100] for i in range(0, len(l), 100)]
+
+# Split into a given number of chunks
+k = np.array_split(l, 8)
 
 # Write into files
 
 for i, d in enumerate(k):
-    with open(f"train_split_{i}.txt", 'w') as f:
+    with open(f"k400_val_split_{i}.txt", 'w') as f:
         f.write("\n".join(str(item) for item in d))
 
 # Run command

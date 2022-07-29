@@ -1,10 +1,10 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import os
-import os.path as osp
-
-import mmcv
+import warnings
 import numpy as np
+
+from os import path as osp
 import torch
 from mmcv import Config, DictAction
 from mmcv.cnn import fuse_conv_bn
@@ -12,10 +12,13 @@ from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist, load_checkpoint
 from mmcv.runner.fp16_utils import wrap_fp16_model
 
-from mmaction.apis import multi_gpu_test, single_gpu_test
+from mmaction.apis import single_gpu_test, multi_gpu_test
 from mmaction.datasets import build_dataloader, build_dataset
 from mmaction.models import build_model
 from mmaction.utils import register_module_hooks
+from mmaction.datasets.samplers import DistributedSampler
+from torch.utils.data import DataLoader
+from torchdata.datapipes.map import SequenceWrapper
 
 
 def parse_args():
@@ -79,46 +82,8 @@ def turn_off_pretrained(cfg):
             turn_off_pretrained(sub_cfg)
 
 
-def inference_pytorch(args, cfg, distributed, data_loader):
-    """Get predictions by pytorch models."""
-    # remove redundant pretrain steps for testing
-    turn_off_pretrained(cfg.model)
-
-    # build the model and load checkpoint
-    model = build_model(cfg.model)
-
-    if len(cfg.module_hooks) > 0:
-        register_module_hooks(model, cfg.module_hooks)
-
-    fp16_cfg = cfg.get('fp16', None)
-    if fp16_cfg is not None:
-        wrap_fp16_model(model)
-
-    if args.checkpoint:
-        load_checkpoint(model, args.checkpoint, map_location='cpu')
-    elif cfg.load_from:
-        load_checkpoint(model, cfg.load_from, map_location='cpu')
-    else:
-        raise AttributeError("Failed to find checkpoint file from config or argument")
-
-    if args.fuse_conv_bn:
-        model = fuse_conv_bn(model)
-
-    if not distributed:
-        model = MMDataParallel(model, device_ids=[0])
-        outputs = single_gpu_test(model, data_loader)
-    else:
-        model = MMDistributedDataParallel(
-            model.cuda(),
-            device_ids=[torch.cuda.current_device()],
-            broadcast_buffers=False)
-        outputs = multi_gpu_test(model, data_loader, args.tmpdir,
-                                 args.gpu_collect)
-
-    return outputs
-
-
 def main():
+    #%% Parse configuration
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
@@ -141,40 +106,77 @@ def main():
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
 
-    rank, _ = get_dist_info()
+    rank, world_size = get_dist_info()
 
     # The flag is used to register module's hooks
     cfg.setdefault('module_hooks', [])
 
-    # build the dataloader
     cfg.data.test.type = 'DenseExtracting'
-    if args.video_list:
-        cfg.data.test.ann_file = args.video_list
+    cfg.data.test.clip_interval = args.clip_interval
     if args.video_root:
         cfg.data.test.data_prefix = args.video_root
-    cfg.data.test.clip_interval = args.clip_interval
+    if args.video_list:
+        cfg.data.test.ann_file = args.video_list
+    if args.checkpoint:
+        cfg.load_from = args.checkpoint
+    if args.out_dir:
+        cfg.out_dir = args.out_dir
+    if cfg.out_dir is None:
+        warnings.warn("Output directory was not specified, so dry-run only")
 
-    dataset = build_dataset(cfg.data.test)
-    dataloader_setting = dict(
-        videos_per_gpu=cfg.data.get('videos_per_gpu', 1),
-        workers_per_gpu=cfg.data.get('workers_per_gpu', 1),
-        dist=distributed,
-        shuffle=False)
+    #%% Init model
+    # remove redundant pretrain steps for testing
+    turn_off_pretrained(cfg.model)
 
-    dataloader_setting = dict(dataloader_setting,
-                              **cfg.data.get('test_dataloader', {}))
-    data_loader = build_dataloader(dataset, **dataloader_setting)
+    # build the model and load checkpoint
+    model = build_model(cfg.model)
 
-    outputs = inference_pytorch(args, cfg, distributed, data_loader)
+    if len(cfg.module_hooks) > 0:
+        register_module_hooks(model, cfg.module_hooks)
 
-    if rank == 0:
-        if args.out_dir:
-            mmcv.mkdir_or_exist(args.out_dir)
-            outputs = dataset.split_results_by_video(outputs)
-            for video_name, video_result in zip(dataset.video_infos.keys(), outputs):
-                name = f'{osp.join(args.out_dir, video_name)}.pkl'
-                print(f'\nwriting results to {name}]')
-                mmcv.dump(video_result, name)
+    fp16_cfg = cfg.get('fp16', None)
+    if fp16_cfg is not None:
+        wrap_fp16_model(model)
+
+    load_checkpoint(model, cfg.load_from, map_location='cpu')
+
+    if args.fuse_conv_bn:
+        model = fuse_conv_bn(model)
+
+    if not distributed:
+        model = MMDataParallel(model, device_ids=[0])
+    else:
+        model = MMDistributedDataParallel(
+            model.cuda(),
+            device_ids=[torch.cuda.current_device()],
+            broadcast_buffers=False)
+
+    #%% Init datasets and test
+    ann_file = [x.strip() for x in open(cfg.data.test.ann_file).readlines()]
+    # ann_file = DataLoader(ann_file, sampler=DistributedSampler(ann_file, world_size, rank, shuffle=False), drop_last=False)
+    for ann_line in ann_file:
+        cfg.data.test.ann_file = ann_line
+        dataset = build_dataset(cfg.data.test)
+        dataloader_setting = dict(
+            videos_per_gpu=cfg.data.get('videos_per_gpu', 1),
+            workers_per_gpu=cfg.data.get('workers_per_gpu', 1),
+            dist=distributed,
+            shuffle=False)
+
+        dataloader_setting = dict(dataloader_setting,
+                                  **cfg.data.get('test_dataloader', {}))
+        data_loader = build_dataloader(dataset, **dataloader_setting)
+
+        if distributed:
+            outputs = multi_gpu_test(model, data_loader, args.tmpdir,
+                                     args.gpu_collect)
+        else:
+            outputs = single_gpu_test(model, data_loader)
+
+        if cfg.out_dir and rank == 0:
+            out_path = osp.join(args.out_dir, f'{dataset.video_name}.npy')
+            print(f'\nwriting results to {out_path}')
+            np.save(out_path, np.array(outputs))
 
 
 if __name__ == '__main__':
