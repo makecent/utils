@@ -16,11 +16,13 @@ class FetchStackedFrames(object):
                  clip_len,
                  num_clips=1,
                  frame_interval=1,
+                 sampling_style='center',
                  out_of_bound_opt='clamp',
                  test_mode=False):
 
         self.clip_len = clip_len
         self.frame_interval = frame_interval
+        self.sampling_style = sampling_style
         self.out_of_bound_opt = out_of_bound_opt
         self.test_mode = test_mode
         self.num_clips = num_clips
@@ -36,7 +38,12 @@ class FetchStackedFrames(object):
         clip_len = self.clip_len * self.num_clips
         start_index = results['start_index']
         total_frames = results['total_frames']
-        frame_inds = results['frame_index'] + np.arange(-clip_len/2, clip_len/2, dtype=int) * self.frame_interval
+        if self.sampling_style == 'center':
+            frame_inds = results['frame_index'] + np.arange(-clip_len/2, clip_len/2, dtype=int) * self.frame_interval
+        elif self.sampling_style == 'right':
+            frame_inds = results['frame_index'] + np.arange(0, clip_len, dtype=int) * self.frame_interval
+        elif self.sampling_style == 'left':
+            frame_inds = results['frame_index'] + np.arange(-clip_len+1, 1, dtype=int) * self.frame_interval
 
         if self.out_of_bound_opt == 'loop':
             frame_inds = np.mod(frame_inds, total_frames)

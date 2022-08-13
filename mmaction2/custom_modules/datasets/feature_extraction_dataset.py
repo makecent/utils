@@ -17,6 +17,7 @@ class DenseExtracting(Dataset):
                  pipeline,
                  data_prefix=None,
                  clip_interval=4,
+                 clip_len=128,
                  filename_tmpl='img_{:05}.jpg',
                  start_index=0,
                  modality='RGB'):
@@ -28,6 +29,7 @@ class DenseExtracting(Dataset):
         self.data_prefix = osp.realpath(data_prefix) if data_prefix is not None and osp.isdir(
             data_prefix) else data_prefix
         self.clip_interval = clip_interval
+        self.clip_len = clip_len
         self.filename_tmpl = filename_tmpl
         self.start_index = start_index
         assert modality in ['RGB', 'Flow', 'Video']
@@ -39,7 +41,7 @@ class DenseExtracting(Dataset):
     def load_video_info(self):
         frame_infos = []
         video_path = osp.join(self.data_prefix, self.video_name)
-        frame_inds = list(range(self.start_index, self.start_index + self.total_frames, self.clip_interval))
+        frame_inds = list(range(self.start_index, self.start_index + self.total_frames - self.clip_len + 1, self.clip_interval))
         self.feat_len = len(frame_inds)
         for frm_idx in frame_inds:
             frame_info = {'frame_index': frm_idx}

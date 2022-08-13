@@ -2,8 +2,8 @@ import torch
 from torch import nn
 
 from mmaction.models.builder import BACKBONES
-from custom_modules.models.backbones.slowfast.models import MODEL_REGISTRY
-from custom_modules.models.backbones.slowfast.config.defaults import get_cfg
+from .slowfast.models import MODEL_REGISTRY
+from .slowfast.config.defaults import get_cfg
 from mmcv.runner import _load_checkpoint, load_state_dict
 cfg = get_cfg()
 cfg.merge_from_file("custom_modules/models/backbones/slowfast/config/configs/Kinetics/MVITv2_B_32x3.yaml")

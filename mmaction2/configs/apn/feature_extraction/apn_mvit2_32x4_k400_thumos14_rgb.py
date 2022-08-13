@@ -15,6 +15,7 @@ load_from = "/home/louis/PycharmProjects/APN/work_dirs/apn_mvit2_32x4_10e_kineti
 # input configuration
 clip_len = 32
 frame_interval = 4
+clip_interval = 4
 
 # dataset settings
 dataset_type = 'DenseExtracting'
@@ -24,7 +25,7 @@ ann_file = '/home/louis/PycharmProjects/APN/my_data/thumos14/annotations/apn/tes
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_bgr=False)
 test_pipeline = [
-    dict(type='FetchStackedFrames', clip_len=clip_len, frame_interval=frame_interval),
+    dict(type='FetchStackedFrames', clip_len=clip_len, frame_interval=frame_interval, sampling_style='right'),
     dict(type='RawFrameDecode'),
     dict(type='Resize', scale=(-1, 256)),
     dict(type='CenterCrop', crop_size=224),
@@ -40,6 +41,8 @@ data = dict(
         type=dataset_type,
         ann_file=ann_file,
         data_prefix=data_root,
+        clip_interval=clip_interval,
+        clip_len=clip_len*frame_interval,
         pipeline=test_pipeline))
 
 fp16 = dict()

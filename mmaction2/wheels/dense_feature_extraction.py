@@ -16,9 +16,6 @@ from mmaction.apis import single_gpu_test, multi_gpu_test
 from mmaction.datasets import build_dataloader, build_dataset
 from mmaction.models import build_model
 from mmaction.utils import register_module_hooks
-from mmaction.datasets.samplers import DistributedSampler
-from torch.utils.data import DataLoader
-from torchdata.datapipes.map import SequenceWrapper
 
 
 def parse_args():
@@ -153,7 +150,6 @@ def main():
 
     #%% Init datasets and test
     ann_file = [x.strip() for x in open(cfg.data.test.ann_file).readlines()]
-    # ann_file = DataLoader(ann_file, sampler=DistributedSampler(ann_file, world_size, rank, shuffle=False), drop_last=False)
     for ann_line in ann_file:
         cfg.data.test.ann_file = ann_line
         dataset = build_dataset(cfg.data.test)
