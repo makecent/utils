@@ -53,14 +53,6 @@ class DenseExtracting(Dataset):
             frame_infos.append(frame_info)
         return frame_infos
 
-    # def split_results_by_video(self, results):
-    #     results_vs_video = []
-    #     it = np.cumsum(self.feat_len)
-    #     for i, j in zip(it[:-1], it[1:]):
-    #         results_by_video = results[i: j]
-    #         results_vs_video.append(results_by_video)
-    #     return results_vs_video
-
     def __len__(self):
         """Get the size of the dataset."""
         return len(self.frame_infos)

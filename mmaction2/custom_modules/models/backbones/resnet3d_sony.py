@@ -1,10 +1,11 @@
 import math
 import os
-import torch
+
 import numpy as np
-from mmcv.runner import load_checkpoint, BaseModule
+import torch
 from mmaction.models.builder import BACKBONES
-from mmaction.utils import get_root_logger
+from mmcv.runner import BaseModule
+
 
 def get_padding_shape(filter_shape, stride, mod=0):
     """Fetch a tuple describing the input padding shape.
@@ -13,6 +14,7 @@ def get_padding_shape(filter_shape, stride, mod=0):
     by the stride.
     See https://stackoverflow.com/a/49842071 for explanation of TF SAME padding logic
     """
+
     def _pad_top_bottom(filter_dim, stride_val, mod):
         if mod:
             pad_along = max(filter_dim - mod, 0)
@@ -196,6 +198,7 @@ class ResNet3d_sony(BaseModule):
     def __init__(self,
                  modality='rgb',
                  name='inception',
+                 avg_feat=False,
                  **kwargs):
         super(ResNet3d_sony, self).__init__(**kwargs)
 
@@ -208,6 +211,7 @@ class ResNet3d_sony(BaseModule):
             raise ValueError(
                 '{} not among known modalities [rgb|flow]'.format(modality))
         self.modality = modality
+        self.avg_feat = avg_feat
 
         conv3d_1a_7x7 = Unit3Dpy(
             out_channels=64,
@@ -256,7 +260,6 @@ class ResNet3d_sony(BaseModule):
         self.mixed_5b = Mixed(832, [256, 160, 320, 32, 128, 128])
         self.mixed_5c = Mixed(832, [384, 192, 384, 48, 128, 128])
 
-
     def forward(self, inp):
         # Preprocessing
         out = self.conv3d_1a_7x7(inp)
@@ -275,7 +278,9 @@ class ResNet3d_sony(BaseModule):
         out = self.maxPool3d_5a_2x2(out)
         out = self.mixed_5b(out)
         out = self.mixed_5c(out)
-        # out = self.avg_pool(out)
+        out = self.avg_pool(out)
+        if self.avg_feat:
+            out = out.mean(dim=(-1, -2, -3))
         # out = self.dropout(out)
         # out = self.conv3d_0c_1x1(out)
         # out = out.squeeze(3)

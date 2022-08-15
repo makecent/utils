@@ -6,7 +6,7 @@ import numpy as np
 
 from os import path as osp
 import torch
-from mmcv import Config, DictAction
+from mmcv import Config, DictAction, mkdir_or_exist
 from mmcv.cnn import fuse_conv_bn
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import get_dist_info, init_dist, load_checkpoint
@@ -118,6 +118,8 @@ def main():
         cfg.load_from = args.checkpoint
     if args.out_dir:
         cfg.out_dir = args.out_dir
+    if cfg.out_dir is not None:
+        mkdir_or_exist(cfg.out_dir)
     if cfg.out_dir is None:
         warnings.warn("Output directory was not specified, so dry-run only")
 
@@ -135,7 +137,8 @@ def main():
     if fp16_cfg is not None:
         wrap_fp16_model(model)
 
-    load_checkpoint(model, cfg.load_from, map_location='cpu')
+    if cfg.load_from is not None:
+        load_checkpoint(model, cfg.load_from, map_location='cpu')
 
     if args.fuse_conv_bn:
         model = fuse_conv_bn(model)
