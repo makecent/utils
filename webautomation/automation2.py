@@ -77,14 +77,15 @@ def check_date(driver):
         try:
             driver.find_element("name", 'picker-selected')
 
+            confirm_date = driver.find_element("xpath", '//*[@id="app"]/div/div[2]/div[5]/div[1]/span[2]')
+            driver.execute_script("arguments[0].click();", confirm_date)
+
             captcha_input = driver.find_element("xpath", '//*[@id="app"]/div/div[10]/div/input')
             captcha_image = driver.find_element("xpath", '/html/body/div/div/div[10]/div/img')
             captcha_result = ocr.classification(captcha_image.screenshot_as_png)
             captcha_input.send_keys(captcha_result)
 
-            confirm_date = driver.find_element("xpath", '//*[@id="app"]/div/div[2]/div[5]/div[1]/span[2]')
-            driver.execute_script("arguments[0].click();", confirm_date)
-            confirm_purchase = driver.find_element("xpath", '//*[@id="app"]/div/div[10]')
+            confirm_purchase = driver.find_element("xpath", '/html/body/div/div/div[11]')
             driver.execute_script("arguments[0].click();", confirm_purchase)
             # fail = driver.find_elements_by_class_name('yd-toast-content')
             # if fail:
