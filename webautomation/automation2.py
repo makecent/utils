@@ -6,9 +6,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import time
-import winsound
 from itertools import cycle
+import ddddocr
 
+ocr = ddddocr.DdddOcr()
 
 def try_and_refresh(driver, operations):
     if not isinstance(operations, (list, tuple)):
@@ -30,20 +31,22 @@ def try_and_refresh(driver, operations):
 
 
 def login_stage1(driver):
-    my_account = driver.find_element_by_xpath('/html/body/div/div/div[6]/div[2]/div[2]')
+    my_account = driver.find_element("xpath", '/html/body/div/div/div[7]/div[2]/div[2]')
     my_account.click()
-    login_icon = driver.find_element_by_xpath('/html/body/div/div/div[1]/div/div/p')
+    login_icon = driver.find_element("xpath", '/html/body/div/div/div[1]/div/div/p')
     login_icon.click()
 
 
 def login_stage2(driver):
-    email_input = driver.find_element_by_xpath('/html/body/div/div/div[2]/div/form/div/div[1]/input')
+    email_input = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, '/html/body/div/div/div[2]/div/form/div/div[1]/input'))
+    )
     email_input.send_keys('luchongkai96@gmail.com')
-    passwd_input = driver.find_element_by_xpath('/html/body/div/div/div[2]/div/form/div/div[3]/input')
-    passwd_input.send_keys('yourpasswd')
-    remember_icon = driver.find_element_by_xpath('/html/body/div/div/div[2]/div/form/div/div[6]/div')
+    passwd_input = driver.find_element("xpath", '/html/body/div/div/div[2]/div/form/div/div[3]/input')
+    passwd_input.send_keys('lck162599')
+    remember_icon = driver.find_element("xpath", '/html/body/div/div/div[2]/div/form/div/div[6]/div')
     remember_icon.click()
-    login_icon = driver.find_element_by_xpath('/html/body/div/div/div[2]/div/form/div/div[8]')
+    login_icon = driver.find_element("xpath", '/html/body/div/div/div[2]/div/form/div/div[8]')
     login_icon.click()
 
 
@@ -55,26 +58,33 @@ def click_to_zhuhai(driver):
 
 
 def input_particulars(driver):
-    name_input = driver.find_element_by_xpath('//*[@id="app"]/div/div[6]/div/div[2]/div[1]/div[2]/input')
+    name_input = driver.find_element("xpath", '//*[@id="app"]/div/div[6]/div/div[2]/div[1]/div[2]/input')
     name_input.send_keys('LU Chongkai')
-    passport_input = driver.find_element_by_xpath('//*[@id="app"]/div/div[6]/div/div[2]/div[2]/div[2]/input')
-    passport_input.send_keys('your info')
-    agree_icon = driver.find_element_by_xpath('//*[@id="app"]/div/div[9]/span[1]')
+    passport_input = driver.find_element("xpath", '//*[@id="app"]/div/div[6]/div/div[2]/div[2]/div[2]/input')
+    passport_input.send_keys('C63103428')
+    agree_icon = driver.find_element("xpath", '//*[@id="app"]/div/div[9]/span[1]')
     driver.execute_script("arguments[0].click();", agree_icon)
 
 
 def check_date(driver):
-    for i in cycle(range(18, 25)):  # 18 = 1.13
-        icon = driver.find_element_by_xpath('/html/body/div/div/div[2]/div[1]/div[1]/span[2]')
-        driver.execute_script("arguments[0].click();", icon)
-        date = driver.find_element_by_xpath(f'/html/body/div/div/div[2]/div[3]/section/div/div[3]/div[{i}]/div')
-        driver.execute_script("arguments[0].click();", date)
-        preorder_icon = driver.find_element_by_xpath('//*[@id="app"]/div/div[2]/div[1]/div[3]/div[2]/span')
-        driver.execute_script("arguments[0].click();", preorder_icon)
-        if driver.find_elements_by_class_name('picker-selected'):
-            confirm_date = driver.find_element_by_xpath('//*[@id="app"]/div/div[2]/div[5]/div[1]/span[2]')
+    for i in cycle(range(22, 29)):  # 18 = Aug 18
+        choose_date_icon = driver.find_element("xpath", '/html/body/div/div/div[2]/div[1]/div[1]/span[2]')
+        driver.execute_script("arguments[0].click();", choose_date_icon)
+        date_icon = driver.find_element("xpath", f'/html/body/div/div/div[2]/div[3]/section/div/div[3]/div[{i}]/div')
+        driver.execute_script("arguments[0].click();", date_icon)
+        choose_time_icon = driver.find_element("xpath", '//*[@id="app"]/div/div[2]/div[1]/div[3]/div[2]/span')
+        driver.execute_script("arguments[0].click();", choose_time_icon)
+        try:
+            driver.find_element("name", 'picker-selected')
+
+            captcha_input = driver.find_element("xpath", '//*[@id="app"]/div/div[10]/div/input')
+            captcha_image = driver.find_element("xpath", '/html/body/div/div/div[10]/div/img')
+            captcha_result = ocr.classification(captcha_image.screenshot_as_png)
+            captcha_input.send_keys(captcha_result)
+
+            confirm_date = driver.find_element("xpath", '//*[@id="app"]/div/div[2]/div[5]/div[1]/span[2]')
             driver.execute_script("arguments[0].click();", confirm_date)
-            confirm_purchase = driver.find_element_by_xpath('//*[@id="app"]/div/div[10]')
+            confirm_purchase = driver.find_element("xpath", '//*[@id="app"]/div/div[10]')
             driver.execute_script("arguments[0].click();", confirm_purchase)
             # fail = driver.find_elements_by_class_name('yd-toast-content')
             # if fail:
@@ -90,9 +100,9 @@ def check_date(driver):
                 break
             else:
                 continue
-        else:
+        except:
+            time.sleep(8)
             continue
-
 
 def main():
     driver = webdriver.Chrome(ChromeDriverManager().install())
