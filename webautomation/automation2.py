@@ -8,6 +8,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import time
 from itertools import cycle
 import ddddocr
+import argparse
 
 ocr = ddddocr.DdddOcr()
 
@@ -17,6 +18,7 @@ def try_and_refresh(driver, operations):
     while True:
         try:
             for op in operations:
+                check_if_wrong(driver)
                 op(driver)
             break
         except (TimeoutException, NoSuchElementException, ValueError) as e:
@@ -29,6 +31,14 @@ def try_and_refresh(driver, operations):
                     continue
             continue
 
+def check_if_wrong(driver):
+    while True:
+        try:
+            driver.find_element("xpath", '/html/body/div/div/div[3]/p[2]')
+            click_back = driver.find_element("xpath", '/html/body/div/div/div[1]/span')
+            click_back.click()
+        except:
+            break
 
 def login_stage1(driver):
     my_account = driver.find_element("xpath", '/html/body/div/div/div[7]/div[2]/div[2]')
@@ -67,7 +77,7 @@ def input_particulars(driver):
 
 
 def check_date(driver):
-    for i in cycle(range(22, 29)):  # 18 = Aug 18
+    for i in cycle(range(29, 32)):  # 18 = Aug 18
         choose_date_icon = driver.find_element("xpath", '/html/body/div/div/div[2]/div[1]/div[1]/span[2]')
         driver.execute_script("arguments[0].click();", choose_date_icon)
         date_icon = driver.find_element("xpath", f'/html/body/div/div/div[2]/div[3]/section/div/div[3]/div[{i}]/div')
@@ -102,11 +112,25 @@ def check_date(driver):
             else:
                 continue
         except:
-            time.sleep(8)
+            time.sleep(10)
             continue
 
+
+def parse_args():
+    # you don't need to configure the argment --help, which will be automatically set by the package.
+    parser = argparse.ArgumentParser(description='deliver some messages')
+    parser.add_argument("--proxy", default='', help="ip address")
+    return parser.parse_args()
+
+
 def main():
-    driver = webdriver.Chrome(ChromeDriverManager().install())
+    options = webdriver.ChromeOptions()
+    args = parse_args()
+    if args.proxy:
+        options.add_argument(f'--proxy-server={args.proxy}')
+    driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+    # driver.get('http://icanhazip.com/')
+    # print(driver.page_source)
     driver.get('https://i.hzmbus.com/webhtml/index.html')
     try_and_refresh(driver, [login_stage1, login_stage2, click_to_zhuhai, input_particulars, check_date])
 
