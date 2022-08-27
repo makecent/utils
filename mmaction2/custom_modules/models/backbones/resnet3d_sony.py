@@ -278,7 +278,6 @@ class ResNet3d_sony(BaseModule):
         out = self.maxPool3d_5a_2x2(out)
         out = self.mixed_5b(out)
         out = self.mixed_5c(out)
-        out = self.avg_pool(out)
         if self.avg_feat:
             out = out.mean(dim=(-1, -2, -3))
         # out = self.dropout(out)

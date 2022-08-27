@@ -1,0 +1,2 @@
+# extract RGB frames with given folder of videos
+mim run mmaction2 build_rawframes ${SRC_DIR} ${OUT_DIR} --task rgb --level 1 --ext mp4 --new-short 256
