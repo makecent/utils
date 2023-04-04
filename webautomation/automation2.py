@@ -86,6 +86,8 @@ def check_date(driver):
         driver.execute_script("arguments[0].click();", choose_time_icon)
         try:
             driver.find_element("name", 'picker-selected')
+            import winsound
+            winsound.Beep(frequency=2000, duration=100)
 
             confirm_date = driver.find_element("xpath", '//*[@id="app"]/div/div[2]/div[5]/div[1]/span[2]')
             driver.execute_script("arguments[0].click();", confirm_date)
