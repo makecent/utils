@@ -3,8 +3,9 @@ import os
 
 import numpy as np
 import torch
-from mmaction.models.builder import BACKBONES
-from mmcv.runner import BaseModule
+from mmaction.registry import MODELS
+from mmengine.model import BaseModule
+import torch.nn as nn
 
 
 def get_padding_shape(filter_shape, stride, mod=0):
@@ -193,14 +194,15 @@ class Mixed(torch.nn.Module):
         return out
 
 
-@BACKBONES.register_module()
-class ResNet3d_sony(BaseModule):
+@MODELS.register_module()
+class I3D(BaseModule):
     def __init__(self,
                  modality='rgb',
                  name='inception',
-                 avg_feat=False,
+                 freeze_bn=False, 
+                 freeze_bn_affine=False,
                  **kwargs):
-        super(ResNet3d_sony, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.name = name
         if modality == 'rgb':
@@ -211,7 +213,8 @@ class ResNet3d_sony(BaseModule):
             raise ValueError(
                 '{} not among known modalities [rgb|flow]'.format(modality))
         self.modality = modality
-        self.avg_feat = avg_feat
+        self._freeze_bn = freeze_bn
+        self._freeze_bn_affine = freeze_bn_affine
 
         conv3d_1a_7x7 = Unit3Dpy(
             out_channels=64,
@@ -259,7 +262,16 @@ class ResNet3d_sony(BaseModule):
         # Mixed 5
         self.mixed_5b = Mixed(832, [256, 160, 320, 32, 128, 128])
         self.mixed_5c = Mixed(832, [384, 192, 384, 48, 128, 128])
-
+        
+    def train(self, mode=True):
+        super(I3D, self).train(mode)
+        if self._freeze_bn and mode:
+            for m in self.modules():
+                if isinstance(m, (nn.BatchNorm3d, nn.BatchNorm2d, nn.BatchNorm1d)):
+                    m.eval()
+                    if self._freeze_bn_affine:
+                        m.weight.register_hook(lambda grad: torch.zeros_like(grad))
+                        m.bias.register_hook(lambda grad: torch.zeros_like(grad))
     def forward(self, inp):
         # Preprocessing
         out = self.conv3d_1a_7x7(inp)
@@ -278,8 +290,7 @@ class ResNet3d_sony(BaseModule):
         out = self.maxPool3d_5a_2x2(out)
         out = self.mixed_5b(out)
         out = self.mixed_5c(out)
-        if self.avg_feat:
-            out = out.mean(dim=(-1, -2, -3))
+        # out = self.avg_pool(out)
         # out = self.dropout(out)
         # out = self.conv3d_0c_1x1(out)
         # out = out.squeeze(3)

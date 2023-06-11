@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 
-
 def detbycls_to_detbyvid(dets):
     new_dets = {}
     for cls, value in dets.items():
@@ -17,10 +16,10 @@ def detbycls_to_detbyvid(dets):
     return new_dets
 
 
-# detections = 'apn/src/th14_detections.pkl'
-# gts = 'apn/src/apn_th14_test.csv'
-detections = 'apn/src/dfmad_detections.pkl'
-gts = 'apn/src/apn_dfmad_test.csv'
+# detections = './src/th14_detections.pkl'
+# gts = './src/apn_th14_test.csv'
+detections = './src/dfmad_detections.pkl'
+gts = './src/apn_dfmad_test.csv'
 with open(detections, 'rb') as f:
     dets = pickle.load(f)
 if isinstance(list(dets.keys())[0], int):
@@ -32,7 +31,9 @@ video_names = np.unique(gts[0].values)
 
 video_idx = 1
 video_name = (video_names[video_idx])
-# video_name = 'video_test_0000882'
+# video_name = 'video_test_0000379' # long jump
+# video_name = 'video_test_0000882'   # Hammer Throw
+# video_name = 'video_test_0000626'   # Pole Vault
 
 det = dets[video_name]
 gt_x = gts[gts[0] == video_name]
@@ -43,8 +44,7 @@ for cls_idx in det.keys():
 num_frames = gt_x[1].iloc[0]
 
 
-axes = plt.gca()
-fig = plt.gcf()
+fig, axes = plt.subplots(layout="constrained")
 fig.set_size_inches(7*2.54, 2)
 plt.xlim(-num_frames*.15, num_frames*1.15)
 plt.ylim(-2, 32)
@@ -54,6 +54,7 @@ axes.get_yaxis().set_visible(False)
 axes.get_xaxis().set_visible(False)
 plt.box(False)
 color_dict = {0: 'r', 1: 'g', 2: 'y'}
+# color_dict = {0: 'm', 1: 'g', 2: 'y'}
 for cls_idx in det.keys():
     color = color_dict[list(det.keys()).index(cls_idx)]
     det_of_cls = det[cls_idx]
@@ -67,5 +68,13 @@ for cls_idx in det.keys():
         if j > i:
             break
         plt.bar((end+start)/2, width=end-start, height=10, bottom=15, color=color, alpha=1, edgecolor='k',)
-# plt.legend()
+
+# Incomplete
+plt.bar(1590, width=422, height=10, bottom=0, color='r', alpha=1, linestyle="--", edgecolor='k', linewidth=1, hatch="//")
+plt.bar(2090, width=413, height=10, bottom=0, color='r', alpha=1, linestyle="--", edgecolor='k', linewidth=1, hatch="//")
+
+plt.bar(10620, width=285, height=10, bottom=0, color='g', alpha=1, linestyle="--", edgecolor='k', linewidth=1, hatch="//")
+plt.bar(11190, width=218, height=10, bottom=0, color='g', alpha=1, linestyle="--", edgecolor='k', linewidth=1, hatch="//")
+
+plt.bar(16200, width=956, height=10, bottom=0, color='y', alpha=1, linestyle="--", edgecolor='k', linewidth=1, hatch="//")
 plt.show()
