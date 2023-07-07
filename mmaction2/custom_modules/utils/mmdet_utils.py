@@ -1,10 +1,11 @@
 # Function copied from the mmdetection, revised to support 1d nms
 
-import torch
 from multiprocessing import Pool
+
 import numpy as np
-from mmdet.core.evaluation.mean_ap import (average_precision,
-                                           print_map_summary, tpfp_imagenet)
+import torch
+from mmdet.evaluation.functional.mean_ap import (average_precision,
+                                                 print_map_summary, tpfp_imagenet)
 
 INF = 1e8
 
@@ -213,6 +214,7 @@ def one_vs_n_iou(one_box, n_boxes):
     jaccard = torch.divide(inter_len, union_len)
     return jaccard
 
+
 def eval_map(det_results,
              annotations,
              scale_ranges=None,
@@ -261,7 +263,7 @@ def eval_map(det_results,
     num_imgs = len(det_results)
     num_scales = len(scale_ranges) if scale_ranges is not None else 1
     num_classes = len(det_results[0])  # positive class num
-    area_ranges = ([(rg[0]**2, rg[1]**2) for rg in scale_ranges]
+    area_ranges = ([(rg[0] ** 2, rg[1] ** 2) for rg in scale_ranges]
                    if scale_ranges is not None else None)
 
     pool = Pool(nproc)
@@ -352,6 +354,7 @@ def eval_map(det_results,
 
     return mean_ap, eval_results
 
+
 def get_cls_results(det_results, annotations, class_id):
     """Get det results and gt information of a certain class.
 
@@ -377,6 +380,7 @@ def get_cls_results(det_results, annotations, class_id):
             cls_gts_ignore.append(np.empty((0, 2), dtype=np.float32))
 
     return cls_dets, cls_gts, cls_gts_ignore
+
 
 def tpfp_default(det_bboxes,
                  gt_bboxes,
@@ -424,7 +428,7 @@ def tpfp_default(det_bboxes,
             fp[...] = 1
         else:
             det_areas = (det_bboxes[:, 2] - det_bboxes[:, 0]) * (
-                det_bboxes[:, 3] - det_bboxes[:, 1])
+                    det_bboxes[:, 3] - det_bboxes[:, 1])
             for i, (min_area, max_area) in enumerate(area_ranges):
                 fp[i, (det_areas >= min_area) & (det_areas < max_area)] = 1
         return tp, fp
@@ -464,6 +468,7 @@ def tpfp_default(det_bboxes,
                 if area >= min_area and area < max_area:
                     fp[k, i] = 1
     return tp, fp
+
 
 def bbox_overlaps(bboxes1, bboxes2, mode='iou', eps=1e-6):
     """Calculate the ious between each bbox of bboxes1 and bboxes2.

@@ -3,20 +3,18 @@ import math
 
 import torch.nn as nn
 import torch.utils.checkpoint as cp
-from mmcv.cnn import (ConvModule, Swish, build_activation_layer, constant_init,
-                      kaiming_init)
-from mmcv.runner import load_checkpoint
-from mmcv.utils import _BatchNorm
-
-from mmaction.utils import get_root_logger
-from mmaction.models.builder import BACKBONES
-
-import torch.nn as nn
-from mmcv.cnn import CONV_LAYERS, build_norm_layer, constant_init, kaiming_init
-from torch.nn.modules.utils import _triple
 from einops import rearrange
+from mmaction.registry import MODELS
+from mmcv.cnn import ConvModule, Swish, build_activation_layer
+from mmcv.cnn import build_norm_layer
+from mmengine.model import constant_init, kaiming_init
+from mmengine.runner import load_checkpoint
+from mmengine.utils.dl_utils.parrots_wrapper import _BatchNorm
+from torch.nn.modules.utils import _triple
+from mmengine import MMLogger
 
-@CONV_LAYERS.register_module()
+
+@MODELS.register_module()
 class DepthWise_Conv2plus1d(nn.Module):
     """(2+1)d Conv module for R(2+1)d backbone.
 
@@ -129,7 +127,6 @@ class DepthWise_Conv2plus1d(nn.Module):
         kaiming_init(self.conv_s)
         kaiming_init(self.conv_t)
         constant_init(self.bn_s, 1, bias=0)
-
 
 
 class SEModule(nn.Module):
@@ -288,7 +285,7 @@ class BlockX3D(nn.Module):
 
 
 # We do not support initialize with 2D pretrain weight for X3D
-@BACKBONES.register_module()
+@MODELS.register_module()
 class X3D_no_group(nn.Module):
     """X3D backbone. https://arxiv.org/pdf/2004.04730.pdf.
 
@@ -393,7 +390,7 @@ class X3D_no_group(nn.Module):
         self.res_layers = []
         for i, num_blocks in enumerate(self.stage_blocks):
             spatial_stride = spatial_strides[i]
-            inplanes = self.base_channels * 2**i
+            inplanes = self.base_channels * 2 ** i
             planes = int(inplanes * self.gamma_b)
 
             res_layer = self.make_res_layer(
@@ -416,7 +413,7 @@ class X3D_no_group(nn.Module):
             self.add_module(layer_name, res_layer)
             self.res_layers.append(layer_name)
 
-        self.feat_dim = self.base_channels * 2**(len(self.stage_blocks) - 1)
+        self.feat_dim = self.base_channels * 2 ** (len(self.stage_blocks) - 1)
         self.conv5 = ConvModule(
             self.feat_dim,
             int(self.feat_dim * self.gamma_b),
@@ -598,7 +595,7 @@ class X3D_no_group(nn.Module):
         """Initiate the parameters either from existing checkpoint or from
         scratch."""
         if isinstance(self.pretrained, str):
-            logger = get_root_logger()
+            logger = MMLogger.get_current_instance()
             logger.info(f'load model from: {self.pretrained}')
 
             load_checkpoint(self, self.pretrained, strict=False, logger=logger)

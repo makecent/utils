@@ -1,9 +1,8 @@
 import numpy as np
 import torch
-from mmaction.core.evaluation.accuracy import pairwise_temporal_iou, interpolated_precision_recall
+from mmaction.evaluation.functional import interpolated_precision_recall, pairwise_temporal_iou
 
 from .mmdet_utils import multiclass_nms
-from matplotlib import pyplot as plt
 
 
 def decode_progression(reg_score):
@@ -227,10 +226,11 @@ def plot_detection(detection, video_name, fig=None):
     video_detection = detection[video_name]
     video_detection = np.vstack(video_detection)
     if fig is not None:
-        fig.bar(video_detection[:, :2].mean(-1), video_detection[:, -1]*100, width=video_detection[:, 1] - video_detection[:, 0], align='center', alpha=0.5)
+        fig.bar(video_detection[:, :2].mean(-1), video_detection[:, -1] * 100,
+                width=video_detection[:, 1] - video_detection[:, 0], align='center', alpha=0.5)
     else:
-        plt.bar(video_detection[:, :2].mean(-1), video_detection[:, -1]*100, width=video_detection[:, 1] - video_detection[:, 0], align='center', alpha=0.5)
-
+        plt.bar(video_detection[:, :2].mean(-1), video_detection[:, -1] * 100,
+                width=video_detection[:, 1] - video_detection[:, 0], align='center', alpha=0.5)
 
 
 def plot_prediction(prediction, video_name, fig=None):
@@ -240,7 +240,6 @@ def plot_prediction(prediction, video_name, fig=None):
         fig.plot(video_prediction, '-')
     else:
         plt.plot(video_prediction, '-')
-
 
 
 def average_precision_at_temporal_iou(ground_truth,
@@ -334,7 +333,6 @@ def average_precision_at_temporal_iou(ground_truth,
 
 def plot_gt(video_name, height=100, test_sampling=1000, fig=None):
     from matplotlib import pyplot as plt
-    from itertools import repeat
     import pandas as pd
     import numpy as np
     # plot_gt(video_name.rsplit('/', 1)[-1] + '.mp4', 2)
@@ -353,7 +351,7 @@ def plot_gt(video_name, height=100, test_sampling=1000, fig=None):
     this_gt = gts[gts[0] == video_name]
     endpoints = this_gt.iloc[:, 2:4].values
     video_length = this_gt[1].iloc[0]
-    normalized_endpoints = endpoints/video_length * test_sampling
+    normalized_endpoints = endpoints / video_length * test_sampling
     normalized_endpoints = np.rint(normalized_endpoints).astype(int)
     start = normalized_endpoints[:, 0]
     end = normalized_endpoints[:, 1]
@@ -363,11 +361,12 @@ def plot_gt(video_name, height=100, test_sampling=1000, fig=None):
         plt.bar(normalized_endpoints.mean(-1), height, width=end - start, align='center', alpha=0.5)
 
 
-from mmaction.models.builder import LOSSES
+from mmaction.registry import MODELS
 from mmaction.models.losses import BaseWeightedLoss
 from torch.nn import functional as F
 
-@LOSSES.register_module(force=True)
+
+@MODELS.register_module(force=True)
 class CrossEntropyLossV2(BaseWeightedLoss):
     """Cross Entropy Loss.
     Support two kinds of labels and their corresponding loss type. It's worth
@@ -417,7 +416,8 @@ class CrossEntropyLossV2(BaseWeightedLoss):
 
         return loss_cls
 
-@LOSSES.register_module()
+
+@MODELS.register_module()
 class BCELossWithLogitsV2(BaseWeightedLoss):
     """Binary Cross Entropy Loss with logits.
 

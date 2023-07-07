@@ -2,8 +2,8 @@ import copy
 from os import path as osp
 
 import numpy as np
-from mmaction.datasets.builder import DATASETS
-from mmaction.datasets.pipelines import Compose
+from mmaction.registry import DATASETS
+from mmengine.dataset import Compose
 from torch.utils.data import Dataset
 
 

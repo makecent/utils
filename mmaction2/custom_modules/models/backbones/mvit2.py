@@ -1,14 +1,14 @@
 import torch
 from torch import nn
 
-from mmaction.models.builder import BACKBONES
+from mmaction.registry import MODELS
 from .slowfast.models import MODEL_REGISTRY
 from .slowfast.config.defaults import get_cfg
-from mmcv.runner import _load_checkpoint, load_state_dict
+from mmengine.runner.checkpoint import _load_checkpoint, load_state_dict
 cfg = get_cfg()
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class MViT2(torch.nn.Module):
     def __init__(self, pretrained=True, flow_input=False, num_frames=32):
         super().__init__()

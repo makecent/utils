@@ -5,10 +5,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from timm.models.layers import drop_path, to_2tuple, trunc_normal_
 
-from mmaction.models.builder import BACKBONES
-from mmcv.runner import load_state_dict, _load_checkpoint
-from mmaction.utils import get_root_logger
-from mmcv.utils import print_log
+from mmengine.runner.checkpoint import load_state_dict, _load_checkpoint
+from mmengine import MMLogger, print_log
+from mmaction.registry import MODELS
 
 
 def _cfg(url='', **kwargs):
@@ -187,7 +186,7 @@ variants_cfg = dict(
 )
 
 
-@BACKBONES.register_module()
+@MODELS.register_module()
 class VisionTransformer3D(nn.Module):
     """ Vision Transformer with support for patch or hybrid CNN input stage
     """
@@ -272,7 +271,7 @@ class VisionTransformer3D(nn.Module):
             nn.init.constant_(m.weight, 1.0)
 
     def init_weights(self):
-        logger = get_root_logger()
+        logger = MMLogger.get_current_instance()
         print_log(f'load model from: {self.pretrained}')
         state_dict = _load_checkpoint(filename=self.pretrained)['module']
         load_state_dict(self, state_dict, logger=logger)

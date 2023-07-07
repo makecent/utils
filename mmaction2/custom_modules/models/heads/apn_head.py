@@ -4,12 +4,12 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from mmcv.cnn import kaiming_init
-from mmcv.runner import load_checkpoint
-from mmaction.models.builder import HEADS, build_loss
+from mmengine.model import kaiming_init
+from mmengine.runner import load_checkpoint
+from mmaction.registry import MODELS
 
 
-@HEADS.register_module()
+@MODELS.register_module()
 class APNHead(nn.Module, metaclass=ABCMeta):
     """Regression head for APN.
 
@@ -39,8 +39,8 @@ class APNHead(nn.Module, metaclass=ABCMeta):
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.hid_channels = hid_channels
-        self.loss_cls = build_loss(loss_cls)
-        self.loss_reg = build_loss(loss_reg)
+        self.loss_cls = MODELS.build(loss_cls)
+        self.loss_reg = MODELS.build(loss_reg)
         self.num_stages = num_stages
         self.dropout_ratio = dropout_ratio
         self.pretrained = pretrained

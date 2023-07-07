@@ -1,10 +1,10 @@
 import torch
 
-from mmaction.models.builder import BACKBONES
+from mmaction.registry import MODELS
 
 
-@BACKBONES.register_module()
-class MViT(torch.nn.Module):
+@MODELS.register_module()
+class MViTv1(torch.nn.Module):
     def __init__(self, model_type="mvit_base_16x4", pretrained=True, flow_input=False):
         super().__init__()
         assert model_type in ('mvit_base_16', 'mvit_base_16x4', 'mvit_base_32x3')

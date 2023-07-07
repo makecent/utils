@@ -2,14 +2,13 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from mmaction.models.builder import LOCALIZERS, build_backbone, build_head
+from mmaction.registry import MODELS
 from mmaction.models.recognizers import BaseRecognizer
-from mmaction.core import top_k_accuracy
+from mmaction.evaluation.functional import top_k_accuracy
 from ...utils.apn_utils import binary_accuracy, decode_progression, progression_mae
-from mmcv.runner import auto_fp16
 
 
-@LOCALIZERS.register_module()
+@MODELS.register_module()
 class APN(nn.Module):
     """APN model framework."""
 
@@ -19,8 +18,8 @@ class APN(nn.Module):
                  train_cfg=None,
                  test_cfg=None):
         super().__init__()
-        self.backbone = build_backbone(backbone)
-        self.cls_head = build_head(cls_head)
+        self.backbone = MODELS.build(backbone)
+        self.cls_head = MODELS.build(cls_head)
         self.init_weights()
         self.fp16_enabled = False
         self.train_cfg = train_cfg
@@ -48,7 +47,6 @@ class APN(nn.Module):
 
         return output
 
-    @auto_fp16()
     def forward_train(self, imgs, progression_label=None, class_label=None):
         hard_class_label = class_label
 

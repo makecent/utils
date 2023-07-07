@@ -1,15 +1,16 @@
-import numpy as np
-from mmaction.datasets.builder import PIPELINES
-from mmaction.datasets.pipelines import SampleFrames
-from mmaction.datasets.pipelines import ThreeCrop as _ThreeCrop
-from mmaction.datasets.pipelines.augmentations import _init_lazy_if_proper
-from mmaction.datasets import BLENDINGS, MixupBlending, CutmixBlending
-from mmcv.utils import build_from_cfg
-import torch
 import warnings
+
+import numpy as np
+import torch
+from mmaction.datasets.transforms import SampleFrames
+from mmaction.datasets.transforms import ThreeCrop as _ThreeCrop
+from mmaction.datasets.transforms.processing import _init_lazy_if_proper
+from mmaction.models import MixupBlending, CutmixBlending
+from mmaction.registry import TRANSFORMS, MODELS
 from torch.nn import functional as F
 
-@PIPELINES.register_module()
+
+@TRANSFORMS.register_module()
 class FetchStackedFrames(object):
 
     def __init__(self,
@@ -39,11 +40,12 @@ class FetchStackedFrames(object):
         start_index = results['start_index']
         total_frames = results['total_frames']
         if self.sampling_style == 'center':
-            frame_inds = results['frame_index'] + np.arange(-clip_len/2, clip_len/2, dtype=int) * self.frame_interval
+            frame_inds = results['frame_index'] + np.arange(-clip_len / 2, clip_len / 2,
+                                                            dtype=int) * self.frame_interval
         elif self.sampling_style == 'right':
             frame_inds = results['frame_index'] + np.arange(0, clip_len, dtype=int) * self.frame_interval
         elif self.sampling_style == 'left':
-            frame_inds = results['frame_index'] + np.arange(-clip_len+1, 1, dtype=int) * self.frame_interval
+            frame_inds = results['frame_index'] + np.arange(-clip_len + 1, 1, dtype=int) * self.frame_interval
 
         if self.out_of_bound_opt == 'loop':
             frame_inds = np.mod(frame_inds, total_frames)
@@ -57,7 +59,7 @@ class FetchStackedFrames(object):
         return results
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class FetchGlobalFrames:
     def __init__(self, sample_range=640, *args, **kwargs):
         self.sample_range = sample_range
@@ -73,7 +75,7 @@ class FetchGlobalFrames:
         start_index = results['start_index']
         total_frames = results['total_frames']
         frame_inds = self.tsn_sampler(dict(total_frames=self.sample_range, start_index=start_index))['frame_inds']
-        frame_inds += results['frame_index'] - self.sample_range//2
+        frame_inds += results['frame_index'] - self.sample_range // 2
         frame_inds = np.clip(frame_inds, start_index, start_index + total_frames - 1)
 
         results['frame_inds'] = np.concatenate([results['frame_inds'], frame_inds])
@@ -82,7 +84,7 @@ class FetchGlobalFrames:
         return results
 
 
-@PIPELINES.register_module()
+@TRANSFORMS.register_module()
 class LabelToOrdinal(object):
 
     def __init__(self, num_stages=100):
@@ -107,7 +109,7 @@ class LabelToOrdinal(object):
         return results
 
 
-@BLENDINGS.register_module(force=True)
+@MODELS.register_module(force=True)
 class MixupBlendingProg(MixupBlending):
 
     def __call__(self, imgs, class_label, progression_label):
@@ -118,7 +120,6 @@ class MixupBlendingProg(MixupBlending):
         return mixed_imgs, mixed_class_label, mixed_prog_label
 
     def do_blending(self, imgs, class_label, progression_label):
-
         lam = self.beta.sample()
         batch_size = imgs.size(0)
         rand_index = torch.randperm(batch_size)
@@ -130,7 +131,7 @@ class MixupBlendingProg(MixupBlending):
         return mixed_imgs, mixed_class_label, mixed_prog_label
 
 
-@BLENDINGS.register_module(force=True)
+@MODELS.register_module(force=True)
 class CutmixBlendingProg(CutmixBlending):
 
     def __call__(self, imgs, class_label, progression_label):
@@ -150,8 +151,8 @@ class CutmixBlendingProg(CutmixBlending):
         cut_h = torch.tensor(int(h * cut_rat))
 
         # uniform
-        cx = torch.randint(w, (1, ))[0]
-        cy = torch.randint(h, (1, ))[0]
+        cx = torch.randint(w, (1,))[0]
+        cy = torch.randint(h, (1,))[0]
 
         bbx1 = torch.clamp(cx - torch.div(cut_w, 2, rounding_mode='floor'), 0, w)
         bby1 = torch.clamp(cy - torch.div(cut_h, 2, rounding_mode='floor'), 0, h)
@@ -161,14 +162,13 @@ class CutmixBlendingProg(CutmixBlending):
         return bbx1, bby1, bbx2, bby2
 
     def do_blending(self, imgs, class_label, progression_label):
-
         batch_size = imgs.size(0)
         rand_index = torch.randperm(batch_size)
         lam = self.beta.sample()
 
         bbx1, bby1, bbx2, bby2 = self.rand_bbox(imgs.size(), lam)
         imgs[:, ..., bby1:bby2, bbx1:bbx2] = imgs[rand_index, ..., bby1:bby2,
-                                                  bbx1:bbx2]
+                                             bbx1:bbx2]
         lam = 1 - (1.0 * (bbx2 - bbx1) * (bby2 - bby1) /
                    (imgs.size()[-1] * imgs.size()[-2]))
 
@@ -178,7 +178,7 @@ class CutmixBlendingProg(CutmixBlending):
         return imgs, mixed_class_label, mixed_prog_label
 
 
-@BLENDINGS.register_module()
+@MODELS.register_module()
 class BatchAugBlendingProg:
     """Implementing
         https://openaccess.thecvf.com/content_CVPR_2020/papers/Hoffer_Augment_Your_Batch_Improving_Generalization_Through_Instance_Repetition_CVPR_2020_paper.pdf
@@ -188,7 +188,7 @@ class BatchAugBlendingProg:
     def __init__(self,
                  blendings=(dict(type='MixupBlendingProg', num_classes=200, alpha=.8),
                             dict(type='CutmixBlendingProg', num_classes=200, alpha=1.))):
-        self.blendings = [build_from_cfg(bld, BLENDINGS) for bld in blendings]
+        self.blendings = [MODELS.build(bld) for bld in blendings]
 
     def __call__(self, imgs, class_label, progression_label):
         repeated_imgs = []
@@ -203,7 +203,7 @@ class BatchAugBlendingProg:
         return torch.cat(repeated_imgs), torch.cat(repeated_cls_label), torch.cat(repeated_prog_label)
 
 
-@BLENDINGS.register_module()
+@MODELS.register_module()
 class BatchAugBlending:
     """Implementing
         https://openaccess.thecvf.com/content_CVPR_2020/papers/Hoffer_Augment_Your_Batch_Improving_Generalization_Through_Instance_Repetition_CVPR_2020_paper.pdf
@@ -213,7 +213,7 @@ class BatchAugBlending:
     def __init__(self,
                  blendings=(dict(type='MixupBlendingProg', num_classes=200, alpha=.8),
                             dict(type='CutmixBlendingProg', num_classes=200, alpha=1.))):
-        self.blendings = [build_from_cfg(bld, BLENDINGS) for bld in blendings]
+        self.blendings = [MODELS.build(bld) for bld in blendings]
 
     def __call__(self, imgs, class_label):
         repeated_imgs = []
@@ -225,12 +225,14 @@ class BatchAugBlending:
             repeated_cls_label.append(mixed_class_label)
         return torch.cat(repeated_imgs), torch.cat(repeated_cls_label)
 
-@PIPELINES.register_module(force=True)
+
+@TRANSFORMS.register_module(force=True)
 class ThreeCrop(_ThreeCrop):
     """
     Support short-side center crop now;
     Repeat progression label three times;
     """
+
     def __call__(self, results):
         _init_lazy_if_proper(results, False)
         if 'gt_bboxes' in results or 'proposals' in results:
