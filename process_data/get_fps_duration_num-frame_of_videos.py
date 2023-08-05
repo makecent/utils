@@ -1,25 +1,10 @@
-# from my_modules.datasets.transforms import Time2Frame, RandSlideAug
-# from my_modules.datasets import Thumos14Dataset
-# from mmengine import Config
-# from mmaction.registry import DATASETS
-#
-# cfg = Config.fromfile('configs/basicTAD_mvitv2_96x10_1000e_thumos14_rgb.py')
-# ds_cfg = cfg.train_dataloader.dataset
-# ds_cfg._scope_ = 'mmaction'
-# ds = DATASETS.build(ds_cfg)
-#
-# data_sample = ds.get_data_info(idx=0)
-# transforms = ds.pipeline.transforms
-#
-# results1 = transforms[0](data_sample)
-# results2 = transforms[1](results1)
-# print('end')
 from pathlib import Path
-
+import mmengine
 import cv2
 
 p1 = Path("/home/louis/PycharmProjects/APN/my_data/thumos14/videos/videos/val")
 p2 = Path("/home/louis/PycharmProjects/APN/my_data/thumos14/videos/videos/test")
+video_info = {}
 fps_dict = {}
 dur_dict = {}
 fra_dict = {}
@@ -31,6 +16,7 @@ for p in [p1, p2]:
         fps_dict[v.stem] = fps
         dur_dict[v.stem] = fra / fps
         fra_dict[v.stem] = int(fra)
+        video_info[v.stem] = {'fps': fps, 'dur': fra / fps, 'fra': int(fra)}
 
 # # Validate if the number of extracted frames equals the cv2.CAP_PROP_FRAME_COUNT. Conclusion: Yes, all are aligned.
 # fra_2_dict = {}
@@ -61,3 +47,4 @@ print(
     the cv2.CAP_PROP_FPS align with the video player (Ubuntu, by checking videos' duration).
     """
 )
+mmengine.dump(video_info, "/home/louis/PycharmProjects/APN/my_data/thumos14/th14_video_info.pkl")

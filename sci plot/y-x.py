@@ -5,47 +5,53 @@ import numpy as np
 colors = plt.get_cmap("tab10").colors
 markers = ['o', 'v', 's', 'd', 'X', 'p', '*', 'h', 'H']
 
-k_values = [3, 6, 10, 20, 30]
+x_values = [np.arange(1, 7), np.arange(1, 17)]
 mean_aps = []
 
-#%% mAP figure
-mAP = {
-    'classification': [22.9, 24.60, 24.90, 25.70, 25.9],
+#%% figure 1
+data = {
+    # 'DITA': [29.19, 45.88, 57.47, 50.5, 60.69, 59.38, 63.22, 63.11, 62.47, 64.49, 64.24, 65.03, 65.51, 65.8, 65.63, 65.76],
+    'DITA': [61.72, 64.03, 64.12, 65.42, 67.46, 67.82],
     # 'regression': [21.3, 19.8, 16.2, 15.2],
     # 'cost-sensitive': [21.1, 17.2, 15.5, 14.9],
     # 'binary decomposition': [20.3, 16.2, 15.2, 14.2],
-    'ordinal regression': [25.7, 27.00, 27.6, 28.40, 28.8],
+    'TadTR': [33.31, 44.15, 42.69, 41.14, 49.09, 48.46, 52.69, 52.61, 52.93, 52.32, 52.97, 53.82, 52.86, 52.96, 54.92, 54.78],
 }
-fig, ax = plt.subplots(1, 2, figsize=plt.figaspect(0.7), layout='constrained')
-for i, (name, value) in enumerate(mAP.items()):
-    ln1_reg = ax[0].plot(k_values, value, label=name, color=colors[i], marker=markers[i])  # Plot some data on the axes.
+fig, ax = plt.subplots(2, 1, height_ratios=[1, 1], figsize=plt.figaspect(1), layout='constrained')
+for i, (name, value) in enumerate(data.items()):
+    ln1_reg = ax[0].plot(x_values[i], value, label=name, color=colors[i], marker=markers[i])  # Plot some data on the axes.
 # ax[0].set_xscale('log')
 ax[0].legend()
-# ax[0].set_xticks([3, 10, 30, 100], ['3', '10', '30', '100'])
-ax[0].xaxis.set_major_formatter(lambda x, pos: f'{x:.0f}' if x in [3, 6, 10, 20, 30] else None)
-ax[0].xaxis.set_minor_locator(ticker.MultipleLocator(1))
-ax[0].xaxis.set_minor_formatter(lambda x, pos: f'{x:.0f}' if x in [3, 6, 10, 20, 30] else None)
-# ax[0].set_xlabel('Number of ranks')
+ax[0].set_xticks(x_values[1], x_values[1])
+# ax[0].xaxis.set_major_formatter(lambda x, pos: f'{x:.0f}' if x in [3, 6, 10, 20, 30] else None)
+# ax[0].xaxis.set_minor_locator(ticker.MultipleLocator(1))
+# ax[0].xaxis.set_minor_formatter(lambda x, pos: f'{x:.0f}' if x in [3, 6, 10, 20, 30] else None)
+ax[0].set_xlabel('Epoch')
 # ax[0].set_ylabel('Mean average precision (mAP)')
-fig.supxlabel(r'Number of ranks ($K$)')
-fig.supylabel('Mean average precision (mAP)')
+# fig.supxlabel(r'Number of ranks ($K$)')
+fig.supylabel('mean average precision (mAP)')
 ax[0].grid()
-
-#%% input resolution
-k_values = [10, 30, 100, 300]
-mAP = {
-    '8   x 4 ': [27.6, 28.8, 28.7, 28.2],
-    '16 x 4': [34.2, 34.5, 34.5, 34.2],
-    '32 x 4': [37.3, 37.8, 38.4, 38.8],
+# plt.show()
+#%% figure 2
+x_values = (0.3, 0.4, 0.5, 0.6, 0.7, 'avg')
+x = np.arange(len(x_values))
+width = 0.45
+data2 = {
+    'DITA': [82.9, 78.3, 72.3, 59.9, 45.6, 67.8],
+    'TadTR': [74.6, 67.4, 56.5, 44.9, 30.4, 54.8],
 }
-for i, (name, value) in enumerate(mAP.items()):
-    ln1_reg = ax[1].plot(k_values, value, label=name, color=colors[i+1], marker=markers[i+1])  # Plot some data on the axes.
-ax[1].set_xscale('log')
+for i, (name, value) in enumerate(data2.items()):
+    offset = width * i
+    ln2_reg = ax[1].bar(x + offset, value, width=width, label=name, color=colors[i])
+    ax[1].bar_label(ln2_reg, padding=3)
+# ax[1].set_xscale('log')
 # ax[1].set_xticks([3, 10, 30, 100], ['3', '10', '30', '100'])
-ax[1].xaxis.set_major_formatter(lambda x, pos: f'{x:.0f}' if x in [10, 30, 100, 300] else None)
-ax[1].xaxis.set_minor_formatter(lambda x, pos: f'{x:.0f}' if x in [10, 30, 100, 300] else None)
-# ax[1].set_xlabel('Number of ranks')
+ax[1].set_ylim(0, 120)
+# ax[1].xaxis.set_major_formatter(lambda x, pos: f'{x:.0f}' if x in [10, 30, 100, 300] else None)
+# ax[1].xaxis.set_minor_formatter(lambda x, pos: f'{x:.0f}' if x in [10, 30, 100, 300] else None)
+ax[1].set_xlabel('IoU threshold')
+ax[1].set_xticks(x + width/2, x_values)
 # ax[1].set_ylabel('Mean average precision (mAP)')
-ax[1].legend(loc=(0.65, .3))
-ax[1].grid()
+ax[1].legend()
+# ax[1].grid(zorder=3)
 plt.show()
