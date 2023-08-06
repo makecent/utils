@@ -1,7 +1,8 @@
 # %%  check if the number of generated RGB and optical flow frames correctly aligned
 from pathlib import Path
-from mmcv import imread
+
 import numpy as np
+from mmcv import imread
 
 p = Path("/home/louis/PycharmProjects/APN/data/ucf101/rawframes")
 shape = []
@@ -274,3 +275,12 @@ keep_20_classes_videos(
 keep_20_classes_videos(
     "/home/louis/PycharmProjects/FCOS-TAL/data/thumos14/videos/test", test,
     "/home/louis/PycharmProjects/FCOS-TAL/data/thumos14/videos/20test")
+
+
+# Compute regex pattern from filename_tmpl
+def make_regex_pattern(fixed_pattern):
+    # Use regular expression to extract number of digits
+    num_digits = re.search(r'\{:(\d+)\}', fixed_pattern).group(1)
+    # Build the pattern string using the extracted number of digits
+    pattern = fixed_pattern.replace('{:' + num_digits + '}', r'\d{' + num_digits + '}')
+    return pattern

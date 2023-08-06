@@ -1,11 +1,8 @@
 import mmengine
-from pathlib import Path
 
-actionformer_annfile = r"C:\Users\lucho\PycharmProjects\TAD_DINO\my_data\ant\annotations\anet1.3_i3d_filtered.json"
-actionformer_annfile = mmengine.load(actionformer_annfile)
-ant_video_info = mmengine.load(r'ant_video_info.json')
 
-def generate_thumos14_ann_file(ant_annfile):
+def generate_ant_ann_file(ant_annfile, ant_video_info):
+    ant_annfile = mmengine.load(ant_annfile)
     ant_val_dict = dict()
     ant_train_dict = dict()
     for video_name, ann in ant_annfile['database'].items():
@@ -14,18 +11,19 @@ def generate_thumos14_ann_file(ant_annfile):
         ann_dict.setdefault(video_name, {}).setdefault('duration', ann['duration'])
         ann_dict.setdefault(video_name, {}).setdefault('FPS', ant_video_info[video_name]['fps'])
         for seg in ann['annotations']:
-            se, label = seg['segment'], seg['label']
+            se, cls_name = seg['segment'], seg['label']
+            start_time, end_time = se
             ann_dict.setdefault(video_name, {}).setdefault('segments', []).append(
                 [float(start_time), float(end_time)])
             ann_dict.setdefault(video_name, {}).setdefault('labels', []).append(cls_name)
 
-            ann_dict.setdefault(video_name, {}).setdefault('duration', actionformer_annfile[video_name]['dur'])
-            ann_dict.setdefault(video_name, {}).setdefault('FPS', actionformer_annfile[video_name]['fps'])
-            ann_dict.setdefault(video_name, {}).setdefault('num_frame', actionformer_annfile[video_name]['fra'])
+            ann_dict.setdefault(video_name, {}).setdefault('duration', ant_video_info[video_name]['duration'])
+            ann_dict.setdefault(video_name, {}).setdefault('FPS', ant_video_info[video_name]['fps'])
+            ann_dict.setdefault(video_name, {}).setdefault('num_frame', ant_video_info[video_name]['num_frame'])
             ann_dict.setdefault(video_name, {}).setdefault('segments_f', []).append(
-                [int(round(float(start_time) * float(actionformer_annfile[video_name]['fps']))),
-                 int(round(float(end_time) * float(actionformer_annfile[video_name]['fps'])))])
-    return ann_dict
+                [int(round(float(start_time) * float(ant_video_info[video_name]['fps']))),
+                 int(round(float(end_time) * float(ant_video_info[video_name]['fps'])))])
+    return ant_train_dict, ant_val_dict
 
 
 def sort_ann_dict(ann_dict):
@@ -42,8 +40,9 @@ def sort_ann_dict(ann_dict):
     return ann_dict
 
 
-ann_dict_val = sort_ann_dict(generate_thumos14_ann_file(raw_ann="my_data/thumos14/annotations/ori/annotations_val"))
-ann_dict_test = sort_ann_dict(generate_thumos14_ann_file(raw_ann="my_data/thumos14/annotations/ori/annotations_test"))
+ann_train_dict, ann_val_dict = sort_ann_dict(generate_ant_ann_file(
+    ant_annfile=r"C:\Users\lucho\PycharmProjects\TAD_DINO\my_data\ant\annotations\anet1.3_i3d_filtered.json",
+    ant_video_info=r'ant_video_info.json'))
 
 
 def check_segments(ann_dict, dur_thr=0.1):
@@ -61,21 +60,13 @@ def check_segments(ann_dict, dur_thr=0.1):
     return too_short, out_of_range
 
 
-short1, out1 = check_segments(ann_dict_val, dur_thr=0.1)
-# video_validation_0000364, the last two annotations are out of range (greater than video duration).
-# video_validation_0000856, the last two annotations are out of range.
-short2, out2 = check_segments(ann_dict_test, dur_thr=0.1)
-# video_test_0000270, most annotations are out of range. After manual checking, the whole annotation may be wrong.
-# video_test_0000814, the last three annotations are out of range.
-# video_test_0001081, the last one annotation is out of range.
-
-# By accident, video_test_0001496 was manually found to be wrong annotated.
-
+short1, out1 = check_segments(ann_train_dict, dur_thr=0.1)
+short2, out2 = check_segments(ann_val_dict, dur_thr=0.1)
 print('end')
-# video_validation_0000947 feature missed in feature.tar provided by TadTR
 
 import json
+
 with open('thumos14_val.json', 'w') as f:
-    json.dump(ann_dict_val, f)
+    json.dump(ann_train_dict, f)
 with open('thumos14_test.json', 'w') as f:
-    json.dump(ann_dict_test, f)
+    json.dump(ann_val_dict, f)

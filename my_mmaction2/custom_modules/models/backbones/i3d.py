@@ -1,11 +1,13 @@
+# This is a pytorch implementation of I3D model. Adapted from: https://github.com/hassony2/kinetics_i3d_pytorch
+
 import math
 import os
 
 import numpy as np
 import torch
+import torch.nn as nn
 from mmaction.registry import MODELS
 from mmengine.model import BaseModule
-import torch.nn as nn
 
 
 def get_padding_shape(filter_shape, stride, mod=0):
@@ -199,7 +201,7 @@ class I3D(BaseModule):
     def __init__(self,
                  modality='rgb',
                  name='inception',
-                 freeze_bn=False, 
+                 freeze_bn=False,
                  freeze_bn_affine=False,
                  **kwargs):
         super().__init__(**kwargs)
@@ -262,7 +264,7 @@ class I3D(BaseModule):
         # Mixed 5
         self.mixed_5b = Mixed(832, [256, 160, 320, 32, 128, 128])
         self.mixed_5c = Mixed(832, [384, 192, 384, 48, 128, 128])
-        
+
     def train(self, mode=True):
         super(I3D, self).train(mode)
         if self._freeze_bn and mode:
@@ -272,6 +274,7 @@ class I3D(BaseModule):
                     if self._freeze_bn_affine:
                         m.weight.register_hook(lambda grad: torch.zeros_like(grad))
                         m.bias.register_hook(lambda grad: torch.zeros_like(grad))
+
     def forward(self, inp):
         # Preprocessing
         out = self.conv3d_1a_7x7(inp)

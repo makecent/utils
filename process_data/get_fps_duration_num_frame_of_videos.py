@@ -1,22 +1,37 @@
+import argparse
+import pickle
 from pathlib import Path
-import mmengine
+
 import cv2
 
-p1 = Path("/home/louis/PycharmProjects/APN/my_data/thumos14/videos/videos/val")
-p2 = Path("/home/louis/PycharmProjects/APN/my_data/thumos14/videos/videos/test")
-video_info = {}
-fps_dict = {}
-dur_dict = {}
-fra_dict = {}
-for p in [p1, p2]:
-    for v in p.iterdir():
-        reader = cv2.VideoCapture(str(v))
+
+def main(data_root, output):
+    data_root = Path(data_root)
+    output = Path(output)
+    output.mkdir(exist_ok=True, parents=True)
+    video_info = {}
+    fps_dict = {}
+    dur_dict = {}
+    fra_dict = {}
+    for video in data_root.iterdir():
+        reader = cv2.VideoCapture(str(video))
         fps = reader.get(cv2.CAP_PROP_FPS)
         fra = reader.get(cv2.CAP_PROP_FRAME_COUNT)
-        fps_dict[v.stem] = fps
-        dur_dict[v.stem] = fra / fps
-        fra_dict[v.stem] = int(fra)
-        video_info[v.stem] = {'fps': fps, 'dur': fra / fps, 'fra': int(fra)}
+        fps_dict[video.stem] = fps
+        dur_dict[video.stem] = fra / fps
+        fra_dict[video.stem] = int(fra)
+        video_info[video.stem] = {'fps': fps, 'duration': fra / fps, 'num_frame': int(fra)}
+
+    with open(output / 'video_info.pkl', 'wb') as f:
+        pickle.dump(video_info, f)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data-root', type=str, help='path to the raw videos')
+    parser.add_argument('--output', type=str, default='.', help='path to save the video info')
+    args = parser.parse_args()
+    main(args.data_root, args.output)
 
 # # Validate if the number of extracted frames equals the cv2.CAP_PROP_FRAME_COUNT. Conclusion: Yes, all are aligned.
 # fra_2_dict = {}
@@ -47,4 +62,3 @@ print(
     the cv2.CAP_PROP_FPS align with the video player (Ubuntu, by checking videos' duration).
     """
 )
-mmengine.dump(video_info, "/home/louis/PycharmProjects/APN/my_data/thumos14/th14_video_info.pkl")
