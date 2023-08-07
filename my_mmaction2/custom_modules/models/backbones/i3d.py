@@ -265,6 +265,17 @@ class I3D(BaseModule):
         self.mixed_5b = Mixed(832, [256, 160, 320, 32, 128, 128])
         self.mixed_5c = Mixed(832, [384, 192, 384, 48, 128, 128])
 
+        # self.avg_pool = torch.nn.AvgPool3d((2, 7, 7), (1, 1, 1))
+        # self.dropout = torch.nn.Dropout(dropout_prob)
+        # self.conv3d_0c_1x1 = Unit3Dpy(
+        #     in_channels=1024,
+        #     out_channels=self.num_classes,
+        #     kernel_size=(1, 1, 1),
+        #     activation=None,
+        #     use_bias=True,
+        #     use_bn=False)
+        # self.softmax = torch.nn.Softmax(1)
+
     def train(self, mode=True):
         super(I3D, self).train(mode)
         if self._freeze_bn and mode:

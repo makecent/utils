@@ -1,6 +1,6 @@
 import copy
 from os import path as osp
-import glob
+from pathlib import Path
 
 import numpy as np
 from mmaction.registry import DATASETS
@@ -25,7 +25,8 @@ class DenseExtracting(Dataset):
                  data_prefix=None,
                  filename_tmpl='img_{:05}.jpg',
                  start_index=0,
-                 vformat='Video'):
+                 vformat='video',
+                 modality='RGB'):
         super().__init__()
         self.video_name = video_name
         self.clip_len = clip_len
@@ -38,18 +39,19 @@ class DenseExtracting(Dataset):
         self.video_path = osp.join(self.data_prefix, self.video_name)
 
         if total_frames is None:
-            if vformat == 'Video':
+            if vformat == 'video':
                 reader = cv2.VideoCapture(str(self.video_path))
                 self.total_frames = int(reader.get(cv2.CAP_PROP_FRAME_COUNT))
             else:
                 pattern = make_regex_pattern(filename_tmpl)
-                imgfiles = [img for img in glob.glob(osp.join(self.video_path, '*')) if re.fullmatch(pattern, img)]
+                imgfiles = [img for img in Path(self.video_path).iterdir() if re.fullmatch(pattern, img.name)]
                 self.total_frames = len(imgfiles)
 
         self.filename_tmpl = filename_tmpl
         self.start_index = int(start_index)
-        assert vformat in ['Video', 'RawFrames']
-        self.modality = vformat
+        assert vformat in ['video', 'rawframes']
+        self.vformat = vformat
+        self.modality = modality
 
         self.frame_infos = self.load_video_info()
 
@@ -63,7 +65,7 @@ class DenseExtracting(Dataset):
                           'num_clips': 1,   # we input clips into the model one-by-one.
                           'clip_len': self.clip_len,
                           'label': 0}  # pseudo-label
-            if self.modality == 'Video':
+            if self.vformat == 'video':
                 frame_info['filename'] = self.video_path
             else:
                 frame_info['frame_dir'] = self.video_path
@@ -79,7 +81,7 @@ class DenseExtracting(Dataset):
         """Get the sample for either training or testing given index."""
         results = copy.deepcopy(self.frame_infos[idx])
         results['filename_tmpl'] = self.filename_tmpl
-        results['modality'] = 'RGB' if self.modality == 'Video' else self.modality
+        results['modality'] = self.modality
         results['start_index'] = self.start_index
         return self.pipeline(results)
 

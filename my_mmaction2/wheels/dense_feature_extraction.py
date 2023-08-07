@@ -16,7 +16,7 @@ from my_mmaction2.custom_modules import *
 def parse_args():
     parser = argparse.ArgumentParser(description='MMAction2 clip-level feature extraction')
     parser.add_argument('video_path', help='the path to the video files, could be raw videos or folders of raw frames')
-    parser.add_argument('--format', choices=['Video', 'RawFrames'], default='Video',
+    parser.add_argument('--format', choices=['video', 'rawframes'], default='video',
                         help='format of video files in video path, raw videos or pre-decoded raw frames')
     parser.add_argument('--modality', choices=['RGB', 'Flow'], default='RGB',
                         help='the format of feature to be extracted')
@@ -56,7 +56,7 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
-    parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--local_rank', '--local-rank', type=int, default=0)
     args = parser.parse_args()
     if 'LOCAL_RANK' not in os.environ:
         os.environ['LOCAL_RANK'] = str(args.local_rank)
@@ -79,18 +79,20 @@ def get_cfg(args, video_name):
             mean=[127.5, 127.5, 127.5] if args.modality == 'RGB' else [127.5, 127.5],
             std=[127.5, 127.5, 127.5] if args.modality == 'RGB' else [127.5, 127.5],
             format_shape='NCTHW'),
-        backbone=dict(type='I3D',
-                      modality=f'{args.modality.lower()}',
-                      init_cfg=dict(type='Pretrained',
-                                    checkpoint=f'https://github.com/hassony2/kinetics_i3d_pytorch/raw/master/model/model_{args.modality.lower()}.pth')))
+        backbone=dict(type='I3D', modality=f'{args.modality.lower()}'),
+        neck=[dict(type='AdaptiveAvgPool3d', output_size=(1, 1, 1)),
+              dict(type='Flatten', start_dim=1)]
+    )
+    cfg.load_from = f'https://github.com/makecent/utils/raw/master/checkpoints/I3D/model_{args.modality.lower()}_backbone-prefix.pth'
 
     # ----------------------- data settings ------------------------- #
-    if args.format == 'Video':
+    if args.format == 'video':
         pipeline = [dict(type='DecordInit'), dict(type='DecordDecode')]
     else:
         pipeline = [dict(type='RawFrameDecode')]
     pipeline.extend([dict(type='Resize', scale=(-1, 256)),
-                     dict(type='CenterCrop', crop_size=224),
+                     # dict(type='CenterCrop', crop_size=224),
+                     dict(type='TenCrop', crop_size=224),  # TenCrop as testing augmentation
                      dict(type='FormatShape', input_format='NCTHW'),
                      dict(type='PackActionInputs')])
     cfg.test_dataloader = dict(
@@ -109,18 +111,21 @@ def get_cfg(args, video_name):
             data_prefix=args.video_path,
             filename_tmpl=args.filename_tmpl,
             start_index=args.start_index,
-            vformat=args.format))
+            vformat=args.format,
+            modality=args.modality))
 
     # -------------------- Dump predictions --------------------
     if args.out_dir is not None:
         mkdir_or_exist(args.out_dir)
-        cfg.work_dir = osp.join(args.out_dir, 'extracted_features')
+        cfg.work_dir = osp.join(args.out_dir, 'logs')
     else:
         cfg.work_dir = 'work_dir'
         warnings.warn("Output directory was not specified, so dry-run only")
 
+    video_stem = osp.splitext(osp.basename(video_name))[0]
     dump_metric = dict(type='DumpResults',
-                       out_file_path=osp.join(cfg.work_dir, f'{video_name}_{args.modality}_feats.pkl'))
+                       out_file_path=osp.join(args.out_dir, 'extracted_features',
+                                              f'{video_stem}_{args.modality}_feats.pkl'))
     cfg.test_evaluator = [dump_metric]
 
     # ---------------------- default settings ------------------------- #
@@ -146,7 +151,6 @@ def get_cfg(args, video_name):
     cfg.visualizer = dict(type='ActionVisualizer', vis_backends=[dict(type='LocalVisBackend')])
 
     cfg.log_level = 'INFO'
-    cfg.load_from = None
     cfg.resume = False
 
     return cfg
@@ -155,7 +159,7 @@ def get_cfg(args, video_name):
 def main():
     # %% Parse configuration
     args = parse_args()
-    if args.format == 'Video':
+    if args.format == 'video':
         assert args.modality == 'RGB', "Extract optical flow features with raw video as input is not supported," \
                                        "You have to use the pre-extracted optical flow raw frames."
         # TODO: Add a on-line optical flow computer here to support this case.

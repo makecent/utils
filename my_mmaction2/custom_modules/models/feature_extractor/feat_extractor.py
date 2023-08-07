@@ -1,6 +1,10 @@
-import torch
 from mmaction.registry import MODELS
 from mmengine.model import BaseModel
+from torch.nn import AdaptiveAvgPool3d, Flatten
+
+MODELS.register_module(module=AdaptiveAvgPool3d, name='AdaptiveAvgPool3d')
+MODELS.register_module(module=Flatten, name='Flatten')
+
 
 @MODELS.register_module()
 class FeatExtractor(BaseModel):
@@ -22,6 +26,12 @@ class FeatExtractor(BaseModel):
                 data_samples=None,
                 mode='tensor'):
         num_crops = inputs.shape[1]
-        inputs = inputs.view((-1, ) + inputs.shape[2:])
-        return self.backbone(inputs)
-
+        inputs = inputs.view((-1,) + inputs.shape[2:])
+        feat = self.backbone(inputs)
+        if num_crops > 1:
+            # testing augmentation
+            feat = feat.view((-1, num_crops) + feat.shape[1:])
+            feat = feat.mean(dim=1)
+        if self.neck is not None:
+            feat = self.neck(feat)
+        return feat
