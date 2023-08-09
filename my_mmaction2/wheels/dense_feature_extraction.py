@@ -1,7 +1,5 @@
-# To use it, first add `utils` to PythonPath:
-# `$env:PYTHONPATH += ";$pwd"` for Windows, `PYTHONPATH=$PWD:$PYTHONPATH` for Linux
-# then run
-# python my_mmaction2/wheels/dense_feature_extraction.py
+# Execution example code:
+# PYTHONPATH=$PWD:$PYTHONPATH bash my_mmaction2/wheels/dist_dense_feature_extraction.sh /home/louis/PycharmProjects/TAD_DINO/my_data/thumos14/rawframes/val 2  --out-dir /home/louis/PycharmProjects/TAD_DINO/my_data/thumos14/features/my_i3d_feature_v2/val_flow --format rawframes --modality Flow
 import argparse
 import os
 from os import path as osp
@@ -20,7 +18,7 @@ def parse_args():
                         help='format of video files in video path, raw videos or pre-decoded raw frames')
     parser.add_argument('--modality', choices=['RGB', 'Flow'], default='RGB',
                         help='the format of feature to be extracted')
-    parser.add_argument('--filename-tmpl', default='img_{:05}.jpg',
+    parser.add_argument('--filename-tmpl', default=None,
                         help='the file name template of raw frames, not used for videos')
     parser.add_argument('--start-index', default=0,
                         help='the start index of raw frames, not used for videos')
@@ -90,6 +88,12 @@ def get_cfg(args, video_name):
         pipeline = [dict(type='DecordInit'), dict(type='DecordDecode')]
     else:
         pipeline = [dict(type='RawFrameDecode')]
+
+    if args.filename_tmpl is None and args.format == 'rawframes':
+        if args.modality == 'RGB':
+            args.filename_tmpl = 'img_{:05}.jpg'
+        else:
+            args.filename_tmpl = 'flow_{}_{:05}.jpg'
     pipeline.extend([dict(type='Resize', scale=(-1, 256)),
                      # dict(type='CenterCrop', crop_size=224),
                      dict(type='TenCrop', crop_size=224),  # TenCrop as testing augmentation

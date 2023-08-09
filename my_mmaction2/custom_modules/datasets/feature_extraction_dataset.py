@@ -45,7 +45,10 @@ class DenseExtracting(Dataset):
             else:
                 pattern = make_regex_pattern(filename_tmpl)
                 imgfiles = [img for img in Path(self.video_path).iterdir() if re.fullmatch(pattern, img.name)]
-                self.total_frames = len(imgfiles)
+                if modality == 'RGB':
+                    self.total_frames = len(imgfiles)
+                else:
+                    self.total_frames = len(imgfiles) // 2
 
         self.filename_tmpl = filename_tmpl
         self.start_index = int(start_index)
@@ -90,5 +93,7 @@ def make_regex_pattern(fixed_pattern):
     num_digits = re.search(r'\{:(\d+)\}', fixed_pattern).group(1)
     # Build the pattern string using the extracted number of digits
     pattern = fixed_pattern.replace('{:' + num_digits + '}', r'\d{' + num_digits + '}')
+    # Replace {} with .
+    pattern = pattern.replace('{}', '.')
     return pattern
 
