@@ -1,5 +1,5 @@
 import argparse
-import pickle
+import mmengine
 from pathlib import Path
 
 import cv2
@@ -13,17 +13,22 @@ def main(data_root, output):
     fps_dict = {}
     dur_dict = {}
     fra_dict = {}
-    for video in data_root.iterdir():
+    for video in mmengine.track_iter_progress(list(data_root.iterdir())):
         reader = cv2.VideoCapture(str(video))
         fps = reader.get(cv2.CAP_PROP_FPS)
         fra = reader.get(cv2.CAP_PROP_FRAME_COUNT)
+        # get video shape, H, W
+        h, w = reader.get(cv2.CAP_PROP_FRAME_HEIGHT), reader.get(cv2.CAP_PROP_FRAME_WIDTH)
         fps_dict[video.stem] = fps
         dur_dict[video.stem] = fra / fps
         fra_dict[video.stem] = int(fra)
-        video_info[video.stem] = {'fps': fps, 'duration': fra / fps, 'num_frame': int(fra)}
+        video_info[video.stem] = {'fps': fps,
+                                  'duration': fra / fps,
+                                  'num_frame': int(fra),
+                                  'height': int(h),
+                                  'width': int(w)}
 
-    with open(output / 'video_info.pkl', 'wb') as f:
-        pickle.dump(video_info, f)
+    mmengine.dump(video_info, output / 'video_info.json')
 
 
 if __name__ == '__main__':
