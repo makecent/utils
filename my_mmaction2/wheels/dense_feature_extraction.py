@@ -81,7 +81,7 @@ def get_cfg(args, video_name):
         neck=[dict(type='AdaptiveAvgPool3d', output_size=(1, 1, 1)),
               dict(type='Flatten', start_dim=1)]
     )
-    cfg.load_from = f'https://github.com/makecent/utils/raw/master/checkpoints/I3D/model_{args.modality.lower()}_backbone-prefix.pth'
+    cfg.load_from = f'https://github.com/makecent/utils/releases/download/v0.1/model_{args.modality.lower()}_backbone-prefix.pth'
 
     # ----------------------- data settings ------------------------- #
     if args.format == 'video':
