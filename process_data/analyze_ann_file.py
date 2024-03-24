@@ -1,10 +1,9 @@
-import json
 import matplotlib.pyplot as plt
 from intervaltree import Interval, IntervalTree
+import mmengine
 from mmengine.utils import track_iter_progress
 
-with open(r"C:\Users\lucho\PycharmProjects\TAD_DINO\my_data\thumos14\annotations\louis\thumos14_test.json", "r") as f:
-    data = json.load(f)
+data = mmengine.load(r"../assets/tad_annotations/ANet/anet_val.json")
 
 # Analyze the data
 # 1. Analyze the video duration, the min/max/mean/meadian of the video duration
@@ -20,9 +19,12 @@ percentage_actions = []
 for video_name, video_info in track_iter_progress(data.items()):
     video_duration.append(video_info['duration'])
     num_segments.append(len(video_info['segments']))
-    for ann in video_info['segments']:
+    segments = list(filter(lambda x: (x[1] - x[0]) > 0.1, video_info['segments']))
+    if len(segments) == 0:
+        continue
+    for ann in segments:
         duration_segments.append(ann[1] - ann[0])
-    segments_union = IntervalTree.from_tuples(video_info['segments'])
+    segments_union = IntervalTree.from_tuples(segments)
     segments_union.merge_overlaps()
     actions_duration = sum([i.end - i.begin for i in segments_union])
     percentage_actions.append(actions_duration / video_info['duration'])
@@ -34,11 +36,11 @@ for video_name, video_info in track_iter_progress(data.items()):
 from prettytable import PrettyTable
 table = PrettyTable()
 table.field_names = ["", "min", "max", "mean", "median"]
-table.add_row(["video duration", f"{min(video_duration):.2f}", f"{max(video_duration):.2f}", f"{sum(video_duration) / len(video_duration):.2f}", f"{sorted(video_duration)[len(video_duration) // 2]:.2f}"])
-table.add_row(["num segments", f"{min(num_segments):d}", f"{max(num_segments):d}", f"{sum(num_segments) / len(num_segments):.2f}", f"{sorted(num_segments)[len(num_segments) // 2]:d}"])
-table.add_row(["duration segments", f"{min(duration_segments):.2f}", f"{max(duration_segments):.2f}", f"{sum(duration_segments) / len(duration_segments):.2f}", f"{sorted(duration_segments)[len(duration_segments) // 2]:.2f}"])
+table.add_row(["Video dur.", f"{min(video_duration):.2f}", f"{max(video_duration):.2f}", f"{sum(video_duration) / len(video_duration):.2f}", f"{sorted(video_duration)[len(video_duration) // 2]:.2f}"])
+table.add_row(["Seg. num.", f"{min(num_segments):d}", f"{max(num_segments):d}", f"{sum(num_segments) / len(num_segments):.2f}", f"{sorted(num_segments)[len(num_segments) // 2]:d}"])
+table.add_row(["Seg. dur.", f"{min(duration_segments):.2f}", f"{max(duration_segments):.2f}", f"{sum(duration_segments) / len(duration_segments):.2f}", f"{sorted(duration_segments)[len(duration_segments) // 2]:.2f}"])
 # table add percentage actions in %
-table.add_row(["percentage actions", f"{min(percentage_actions) * 100:.2f}%", f"{max(percentage_actions) * 100:.2f}%", f"{sum(percentage_actions) / len(percentage_actions) * 100:.2f}%", f"{sorted(percentage_actions)[len(percentage_actions) // 2] * 100:.2f}%"])
+table.add_row(["Action pct.", f"{min(percentage_actions) * 100:.2f}%", f"{max(percentage_actions) * 100:.2f}%", f"{sum(percentage_actions) / len(percentage_actions) * 100:.2f}%", f"{sorted(percentage_actions)[len(percentage_actions) // 2] * 100:.2f}%"])
 print(table)
 
 # Plot the boxplot

@@ -10,11 +10,11 @@ mean_aps = []
 
 #%% mAP figure
 mAP = {
-    'classification': [22.9, 24.60, 24.90, 25.70, 25.9],
+    'classification': [32.7, 34.9, 35.1, 36.1, 36.8],
     # 'regression': [21.3, 19.8, 16.2, 15.2],
     # 'cost-sensitive': [21.1, 17.2, 15.5, 14.9],
     # 'binary decomposition': [20.3, 16.2, 15.2, 14.2],
-    'ordinal regression': [25.7, 27.00, 27.6, 28.40, 28.8],
+    'ordinal regression': [35.7, 37.0, 37.6, 38.4, 38.8],
 }
 fig, ax = plt.subplots(1, 2, figsize=plt.figaspect(0.7), layout='constrained')
 for i, (name, value) in enumerate(mAP.items()):
