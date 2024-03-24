@@ -63,16 +63,16 @@ coco_plot_x = [bins_index_map[bin] for bin in coco_bins_percentage if bin in coc
 coco_plot_y = [coco_statistics[bin] for bin in coco_bins_percentage if bin in coco_statistics]
 
 # Plotting
-plt.figure(figsize=(12, 6))
-plt.plot(thumos_plot_x, thumos_plot_y, marker='o', linestyle='-', color='b', label='THUMOS', markersize=8)
-plt.plot(coco_plot_x, coco_plot_y, marker='s', linestyle='--', color='r', label='COCO', markersize=8)
+plt.figure(figsize=(6, 5))
+plt.plot(thumos_plot_x, thumos_plot_y, marker='o', linestyle='-', color='#4A7298', label='THUMOS', markersize=8)
+plt.plot(coco_plot_x, coco_plot_y, marker='s', linestyle='-', color='#F3C846', label='COCO', markersize=8)
 
 # Adjust the plot with equal interval x-ticks
 plt.xticks(range(len(combined_bins)), [f"{bin}%" for bin in combined_bins], rotation=45)
 plt.yticks(range(0, 41, 5), [f"{y}%" for y in range(0, 41, 5)])
-plt.title('Distribution of Action Instance Duration (THUMOS vs COCO)')
-plt.xlabel('Percent of Video Duration')
-plt.ylabel('Percent of Action Instances')
+plt.title('Distribution of Instance Size (THUMOS vs COCO)')
+plt.xlabel('Percent of Space Occupied')
+plt.ylabel('Percent of Instances')
 plt.grid(True)
 plt.ylim(0, 40)
 plt.legend()
