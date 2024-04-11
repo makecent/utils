@@ -26,10 +26,19 @@ which can be up to **20** when using i3d_sony backbone under the same setting (t
 
 
 # TAD models
-Input shape: (1, 48, 224, 224)
-PlusTAD: 8492 Mb
-Mamba: 6173 Mb (6199 when accumulating 4 gradients)
+(4090Ti, CUDA=12.1, Torch=2.1.2, Inference-time FLOPs and Training-time Memory are recorded)
+(Mamba: 10.68M parameters, PlusTAD: 40.84M parameters)
 
-Input shape: (1, 96, 224, 224)
-PlusTAD: 8492 Mb
-Mamba: 6173 Mb
+|                   | PlusTAD          |          | Mamba            |           |
+|-------------------|------------------|----------|------------------|-----------|
+| Input Shape       | Memory (M)       | FLOPs (G)| Memory (M)       | FLOPs (G) |
+| (1, 64, 224, 224) | 3310             | 338      | 4142             | 70        |
+| (1, 96, 224, 224) | 4597             | 508      | 6142             | 105       |
+| (1, 128, 224, 224)| 5881             | 677      | 8046             | 140       |
+| (1, 192, 224, 224)| 8480             | 1015     | 12014            | 210       |
+| (1, 256, 224, 224)| 11083            | 1354     | 15944            | 279       |
+
+
+
+
+![img.png](img.png)
